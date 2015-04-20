@@ -1,0 +1,10 @@
+[package]
+name = "forty_situps"
+version = "0.0.1"
+authors = ["Nick Hamann <nick@wabbo.org>"]
+
+[dependencies]
+rust-base58 = "*"
+
+[dependencies.rust-multihash]
+git = "https://github.com/nham/rust-multihash.git"
