@@ -3,12 +3,12 @@ use std::path::PathBuf;
 use super::block::Block;
 
 // Datastore Key
-struct DSKey {
+pub struct DSKey {
     path: PathBuf,
 }
 
 impl DSKey {
-    pub fn new_key(s: String) -> DSKey {
+    pub fn new_key(s: Vec<u8>) -> DSKey {
         let mut p = PathBuf::new();
         p.push(&s);
         DSKey { path: p }
@@ -32,7 +32,7 @@ type Query = u32;
 type QueryResults = bool;
 
 trait Blockstore {
-	fn put(&mut self, block: Block) -> Result<Option<&DSKey>, DatastoreError>;
+	fn put(&mut self, block: Block) -> Result<Option<Block>, DatastoreError>;
 	fn get(&self, key: &DSKey) -> Result<Option<&Block>, DatastoreError>;
 	fn has(&self, key: &DSKey) -> Result<bool, DatastoreError>;
 	fn delete_block(&mut self, key: &DSKey) -> Result<Option<Block>, DatastoreError>;
@@ -52,35 +52,20 @@ impl<DS> Blockstore for DSBS<DS>
 	fn get(&self, key: &DSKey) -> Result<Option<&Block>, DatastoreError> {
         self.ds.get(key)
     }
-    // fn get(&self, key: &DSKey) -> Result<Option<&T>, DatastoreError>;
 
     fn has(&self, key: &DSKey) -> Result<bool, DatastoreError> {
         self.ds.has(key)
     }
 
-	fn put(&mut self, block: Block) -> Result<Option<&DSKey>, DatastoreError> {
+
+	fn put(&mut self, block: Block) -> Result<Option<Block>, DatastoreError> {
+        // TODO: review go-ipfs impl, in blockstore.go
+        self.ds.put(block.key(), block)
     }
 
 	fn delete_block(&mut self, key: &DSKey) -> Result<Option<Block>, DatastoreError> {
+        self.ds.delete(key)
 
     }
 
 }
-
-/*
-func (bs *blockstore) Get(k u.Key) (*blocks.Block, error) {
-	maybeData, err := bs.datastore.Get(k.DsKey())
-	if err == ds.ErrNotFound {
-		return nil, ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	bdata, ok := maybeData.([]byte)
-	if !ok {
-		return nil, ValueTypeMismatch
-	}
-
-	return blocks.NewBlockWithHash(bdata, mh.Multihash(k))
-}
-*/

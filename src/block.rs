@@ -1,4 +1,5 @@
 use super::{MultiHash, HashFnCode};
+use super::blockstore::DSKey;
 
 // A singular block of data in IPFS
 pub struct Block {
@@ -35,5 +36,10 @@ impl Block {
             mh: mh,
             data: data,
         }
+    }
+
+
+    pub fn key(&self) -> DSKey {
+        DSKey::new_key(self.mh.vec())
     }
 }
