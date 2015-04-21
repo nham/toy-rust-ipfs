@@ -15,8 +15,12 @@ impl Block {
     }
 
     pub fn data(data: Vec<u8>) -> Block {
+        let code = HashFnCode::Sha1 as u8;
         Block {
-            mh: MultiHash::encode(data, HashFnCode::Sha1),
+            mh: match MultiHash::encode(data, code) {
+                    Ok(mh) =>  mh,
+                    Err(e) => panic!("Something is broken in Block::data"),
+                },
             data: data,
         }
     }

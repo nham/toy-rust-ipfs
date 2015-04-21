@@ -1,14 +1,17 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use super::block::Block;
 
+// Datastore Key
 struct DSKey {
-    path: Path,
+    path: PathBuf,
 }
 
 impl DSKey {
     pub fn new_key(s: String) -> DSKey {
-        DSKey { path: Path::new(&s) }
+        let mut p = PathBuf::new();
+        p.push(&s);
+        DSKey { path: p }
     }
 
 }
@@ -28,15 +31,11 @@ trait Datastore<T> {
 type Query = u32;
 type QueryResults = bool;
 
-enum BlockstoreError {
-    Error(String),
-}
-
 trait Blockstore {
-	fn put(&mut self, block: Block) -> Result<Option<&DSKey>, BlockstoreError>;
-	fn get(&self, key: &DSKey) -> Result<Option<&Block>, BlockstoreError>;
-	fn has(&self, key: &DSKey) -> Result<bool, BlockstoreError>;
-	fn delete_block(&mut self, key: &DSKey) -> Result<Option<Block>, BlockstoreError>;
+	fn put(&mut self, block: Block) -> Result<Option<&DSKey>, DatastoreError>;
+	fn get(&self, key: &DSKey) -> Result<Option<&Block>, DatastoreError>;
+	fn has(&self, key: &DSKey) -> Result<bool, DatastoreError>;
+	fn delete_block(&mut self, key: &DSKey) -> Result<Option<Block>, DatastoreError>;
 
     // TODO
 	// AllDSKeysChan(ctx context.Context) (<-chan u.DSKey, error)
@@ -49,10 +48,21 @@ struct DSBS<DS>
 
 impl<DS> Blockstore for DSBS<DS>
     where DS : Datastore<Block> {
-	fn get(&self, key: &DSKey) -> Result<Option<&Block>, BlockstoreError> {
-        match self.ds.get(key) {
-            // TODO
-        }
+
+	fn get(&self, key: &DSKey) -> Result<Option<&Block>, DatastoreError> {
+        self.ds.get(key)
+    }
+    // fn get(&self, key: &DSKey) -> Result<Option<&T>, DatastoreError>;
+
+    fn has(&self, key: &DSKey) -> Result<bool, DatastoreError> {
+        self.ds.has(key)
+    }
+
+	fn put(&mut self, block: Block) -> Result<Option<&DSKey>, DatastoreError> {
+    }
+
+	fn delete_block(&mut self, key: &DSKey) -> Result<Option<Block>, DatastoreError> {
+
     }
 
 }
