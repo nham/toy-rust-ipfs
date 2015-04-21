@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use super::MultiHash;
+use super::DecodedMultiHash;
 
 struct Node<'a> {
     links: Vec<Edge<'a>>,
@@ -12,7 +12,7 @@ struct Edge<'a> {
 
     size: u64,
 
-    target_hash: MultiHash<'a>,
+    target_hash: DecodedMultiHash<'a>,
 
     node: Rc<Node<'a>>
 }
