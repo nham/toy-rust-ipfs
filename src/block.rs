@@ -21,7 +21,7 @@ impl Block {
         Block {
             mh: match MultiHash::encode(&data, code) {
                     Ok(mh) =>  mh,
-                    Err(e) => panic!("Something is broken in Block::data"),
+                    Err(e) => panic!("encode failed in Block::data"),
                 },
             data: data,
         }

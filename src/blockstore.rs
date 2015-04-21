@@ -37,5 +37,10 @@ impl<DS> Blockstore for DSBS<DS>
         self.ds.delete(key)
 
     }
+}
 
+impl<DS> DSBS<DS> where DS: Datastore<Block> {
+    fn new(ds: DS) -> DSBS<DS> {
+        DSBS { ds: ds }
+    }
 }
