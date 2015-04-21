@@ -1,5 +1,5 @@
 use super::{MultiHash, HashFnCode};
-use super::blockstore::DSKey;
+use super::datastore::DSKey;
 
 // A singular block of data in IPFS
 pub struct Block {
@@ -7,6 +7,7 @@ pub struct Block {
     data: Vec<u8>,
 }
 
+// Some constructors for `Block`, as well as the `key` method.
 impl Block {
     pub fn new() -> Block {
         Block {
@@ -18,7 +19,7 @@ impl Block {
     pub fn data(data: Vec<u8>) -> Block {
         let code = HashFnCode::Sha1 as u8;
         Block {
-            mh: match MultiHash::encode(data, code) {
+            mh: match MultiHash::encode(&data, code) {
                     Ok(mh) =>  mh,
                     Err(e) => panic!("Something is broken in Block::data"),
                 },
@@ -40,6 +41,6 @@ impl Block {
 
 
     pub fn key(&self) -> DSKey {
-        DSKey::new_key(self.mh.vec())
+        DSKey::new_key(self.mh.to_base58_string())
     }
 }
