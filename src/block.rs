@@ -17,7 +17,7 @@ impl Block {
     }
 
     pub fn data(data: Vec<u8>) -> Block {
-        let code = HashFnCode::Sha1 as u8;
+        let code = HashFnCode::SHA1 as u8;
         Block {
             mh: match MultiHash::encode(&data, code) {
                     Ok(mh) =>  mh,
