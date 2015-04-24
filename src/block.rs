@@ -1,5 +1,6 @@
-use super::{MultiHash, HashFnCode};
+use super::MultiHash;
 use super::datastore::DSKey;
+use super::util;
 
 // A singular block of data in IPFS
 pub struct Block {
@@ -17,12 +18,8 @@ impl Block {
     }
 
     pub fn data(data: Vec<u8>) -> Block {
-        let code = HashFnCode::SHA1 as u8;
         Block {
-            mh: match MultiHash::encode(&data, code) {
-                    Ok(mh) =>  mh,
-                    Err(e) => panic!("encode failed in Block::data"),
-                },
+            mh: util::hash(&data[..]),
             data: data,
         }
     }
