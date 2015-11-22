@@ -1,0 +1,10 @@
+[package]
+name = "ipfs"
+version = "0.1.0"
+authors = ["Nick Hamann <nick@wabbo.org>"]
+
+[dependencies]
+openssl = "0.7"
+
+[dev-dependencies]
+rustc-serialize = "0.3"
