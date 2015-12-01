@@ -1,8 +1,9 @@
 extern crate openssl;
+extern crate rust_multihash;
 #[cfg(test)] extern crate rustc_serialize;
 
-mod blocks;
-mod multihash;
+mod block;
+mod blockstore;
 mod util;
 
 fn main() {
