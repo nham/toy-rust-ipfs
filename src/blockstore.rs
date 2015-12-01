@@ -1,5 +1,5 @@
 use block;
-use multihash::Multihash;
+use rust_multihash::Multihash;
 
 use std::collections::HashMap;
 

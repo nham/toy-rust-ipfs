@@ -4,8 +4,48 @@ extern crate rust_multihash;
 
 mod block;
 mod blockstore;
+mod commands;
+mod root; // TODO: where should this module reside?
 mod util;
 
+use std::env;
+
+struct CommandInvocation<'a> {
+    path: String,
+    request: commands::Request,
+    command: &'a commands::Command,
+}
+
+type ParseError = String;
+
+impl<'a> CommandInvocation<'a> {
+    fn parse<I>(args: I, root: &'a commands::Command)
+                -> Result<CommandInvocation<'a>, ParseError>
+        where I : Iterator<Item=String>
+    {
+            unimplemented!()
+    }
+}
+
 fn main() {
-    println!("Hello, galaxy.");
+    println!("Hello, universe.");
+
+    let root = make_root_command();
+
+    let invoc = CommandInvocation::parse(env::args().skip(1), &root);
+}
+
+fn make_root_command() -> commands::Command {
+    let short_help = commands::Opt::new_bool(
+        vec!["h"],
+        "Show a short version of the command help text"
+    );
+
+    let long_help = commands::Opt::new_bool(
+        vec!["help"],
+        "Show the full command help text"
+    );
+
+
+    commands::Command::new(vec![short_help, long_help], vec![], root::RootHelpText)
 }

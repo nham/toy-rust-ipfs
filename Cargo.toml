@@ -1,5 +1,5 @@
 [package]
-name = "rust-ipfs"
+name = "ipfs"
 version = "0.1.0"
 authors = ["Nick Hamann <nick@wabbo.org>"]
 
