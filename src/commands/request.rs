@@ -2,8 +2,10 @@ use super::Command;
 use super::OptType as CommandOptType;
 
 use std::collections::HashMap;
+use std::collections::hash_map;
 
 // An option submitted for a request.
+#[derive(Debug)]
 pub enum Opt {
     String(String),
     Bool(bool),
@@ -32,12 +34,20 @@ impl Opt {
     }
 }
 
-pub struct Request {
+pub struct Request<'a> {
     options: HashMap<&'static str, Opt>,
+    pub command: &'a Command,
 }
 
-impl Request {
-    pub fn new(opts: Vec<(&'static str, Opt)>) -> Self {
-        Request { options: opts.into_iter().collect() }
+impl<'a> Request<'a> {
+    pub fn new(opts: Vec<(&'static str, Opt)>, cmd: &'a Command) -> Self {
+        Request {
+            options: opts.into_iter().collect(),
+            command: cmd,
+        }
+    }
+
+    pub fn options(&self) -> hash_map::Iter<&'static str, Opt> {
+        self.options.iter()
     }
 }

@@ -16,26 +16,26 @@ pub struct HelpText {
     */
 }
 
+pub type RunFn = fn(&request::Request) -> Result<(), String>;
+
 pub struct Command {
 	options:    Vec<Opt>,
 	arguments:  Vec<Argument>,
 	pre_run:    (),
-	run:        fn(request::Request) -> Result<(), String>,
+	run:        RunFn,
 	post_run:   (),
-	help_text:   HelpText,
-	subcommands: HashMap<String, Command>,
+	pub help_text:   HelpText,
+	subcommands: HashMap<&'static str, Command>,
 }
 
 impl Command {
     pub fn new(options: Vec<Opt>,
                arguments: Vec<Argument>,
+               run: RunFn,
                help_text: HelpText,
-               subcommands: Vec<(String, Command)>)
+               subcommands: Vec<(&'static str, Command)>)
                -> Self
     {
-        fn run(req: request::Request) -> Result<(), String> {
-            unimplemented!()
-        }
         Command {
             options: options,
             arguments: arguments,
@@ -47,14 +47,17 @@ impl Command {
         }
     }
 
-    pub fn options(&self) -> Vec<&Opt> {
+    pub fn options(&self) -> Vec<(&'static str, &Opt)> {
         let mut v = Vec::new();
         for opt in self.options.iter() {
-            v.push(opt);
+            for &name in opt.names.iter() {
+                v.push((name, opt));
+            }
         }
         v
     }
 
+    // TODO: should I remove this now?
     pub fn get_option<'a>(&'a self, name: &str) -> Option<&'a Opt> {
         for opt in self.options.iter() {
             for &opt_name in opt.names.iter() {
@@ -69,6 +72,10 @@ impl Command {
 
     pub fn subcommand(&self, subcmd: &str) -> Option<&Command> {
         self.subcommands.get(subcmd)
+    }
+
+    pub fn run(&self, req: &request::Request) -> Result<(), String> {
+        (self.run)(req)
     }
 }
 

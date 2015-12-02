@@ -1,6 +1,8 @@
 use super::{Command, OptType};
 use super::request::{self, Request};
 
+use std::collections::HashMap;
+
 pub type ParseError = String;
 
 // TODO: support command arguments
@@ -16,7 +18,7 @@ pub fn parse<I>(mut input: I, root: &Command)
      */
     let mut current_cmd = root;
     let mut opts: Vec<(&'static str, request::Opt)> = Vec::new();
-    let mut cmd_opts = Vec::new();
+    let mut cmd_opts = HashMap::new();
     cmd_opts.extend(root.options());
 
     let mut token: String;
@@ -37,7 +39,7 @@ pub fn parse<I>(mut input: I, root: &Command)
                     &token[1..]
                 };
 
-                match current_cmd.get_option(opt_name) {
+                match cmd_opts.get(opt_name) {
                     None => return Err(format!("Option not recognized: {}", opt_name)),
                     Some(opt) => opt,
                 }
@@ -72,5 +74,5 @@ pub fn parse<I>(mut input: I, root: &Command)
             current_cmd = subcmd;
         }
     }
-    Ok((Request::new(opts), current_cmd))
+    Ok((Request::new(opts, current_cmd), current_cmd))
 }
