@@ -11,8 +11,7 @@ mod util;
 use std::env;
 
 struct CommandInvocation<'a> {
-    path: String,
-    request: commands::Request,
+    request: commands::request::Request,
     command: &'a commands::Command,
 }
 
@@ -23,7 +22,8 @@ impl<'a> CommandInvocation<'a> {
                 -> Result<CommandInvocation<'a>, ParseError>
         where I : Iterator<Item=String>
     {
-            unimplemented!()
+        let (req, cmd) = try!(commands::cli::parse(args, root));
+        Ok(CommandInvocation { request: req, command: cmd })
     }
 }
 
@@ -47,5 +47,8 @@ fn make_root_command() -> commands::Command {
     );
 
 
-    commands::Command::new(vec![short_help, long_help], vec![], root::RootHelpText)
+    commands::Command::new(vec![short_help, long_help],
+                           vec![],
+                           root::RootHelpText,
+                           vec![])
 }
