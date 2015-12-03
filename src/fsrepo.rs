@@ -1,7 +1,44 @@
 use config;
 
+use fs2::FileExt;
+
 use std::env;
+use std::fs::{File, metadata};
+use std::io;
 use std::path::PathBuf;
+
+const LOCK_FILE: &'static str = "repo.lock";
+
+pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
+    repo_path.push(LOCK_FILE);
+
+    println!("in is_locked, testing for file {:?}", &repo_path);
+    match metadata(repo_path.clone()) {
+        Err(e) =>
+            if let io::ErrorKind::NotFound = e.kind() {
+                return Ok(false);
+            },
+        _ => {},
+    }
+
+    println!("in is_locked, file exists");
+    match lock(repo_path) {
+        Err(e) =>
+            match e.kind() {
+                io::ErrorKind::WouldBlock => Ok(true),
+                _ => Err(format!("{}", e)),
+            },
+        Ok(_) => Ok(false),
+    }
+}
+
+pub fn lock(mut repo_path: PathBuf) -> Result<File, io::Error> {
+    let file = try!(File::create(repo_path));
+    println!("in lock, file created");
+    try!(file.try_lock_exclusive());
+    println!("in lock, file was locked");
+    Ok(file)
+}
 
 // Use the environment variable to determine repo path if it exists,
 // else use the default path.

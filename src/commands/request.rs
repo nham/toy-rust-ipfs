@@ -35,7 +35,7 @@ impl Opt {
 }
 
 pub struct Context {
-    repo_dir: PathBuf,
+    pub repo_dir: PathBuf,
 }
 
 impl Context {
@@ -47,7 +47,7 @@ impl Context {
 pub struct Request<'a> {
     options: HashMap<super::OptName, Opt>,
     pub command: &'a Command,
-    context: Context,
+    pub context: Context,
 }
 
 impl<'a> Request<'a> {

@@ -1,3 +1,4 @@
+extern crate fs2;
 extern crate openssl;
 extern crate rust_multihash;
 #[cfg(test)] extern crate rustc_serialize;
@@ -81,6 +82,9 @@ fn make_root_command() -> commands::Command {
 
 fn make_init_command() -> commands::Command {
     fn run(req: &request::Request)  -> Result<(), String> {
+        if try!(fsrepo::is_locked(req.context.repo_dir.clone())) {
+            return Err("Another process has locked the repo. Unable to continue.".to_string());
+        }
         println!("Hello from the init command!");
         Ok(())
     }
