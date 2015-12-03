@@ -5,25 +5,30 @@ extern crate rust_multihash;
 mod block;
 mod blockstore;
 mod commands;
+mod config;
 mod init;
+mod fsrepo;
 mod root; // TODO: where should this module reside?
 mod util;
+
+use commands::request;
 
 use std::env;
 
 struct CommandInvocation<'a> {
-    pub request: commands::request::Request<'a>,
+    pub request: request::Request<'a>,
     pub command: &'a commands::Command,
 }
 
 type ParseError = String;
 
 impl<'a> CommandInvocation<'a> {
-    fn parse<I>(args: I, root: &'a commands::Command)
+    fn from_parse<I>(args: I, root: &'a commands::Command, context: request::Context)
                 -> Result<CommandInvocation<'a>, ParseError>
         where I : Iterator<Item=String>
     {
-        let (req, cmd) = try!(commands::cli::parse(args, root));
+        let (opts, cmd) = try!(commands::cli::parse(args, root));
+        let req = request::Request::new(opts, cmd, context);
         Ok(CommandInvocation { request: req, command: cmd })
     }
 
@@ -35,14 +40,15 @@ impl<'a> CommandInvocation<'a> {
 fn main() {
     let root = make_root_command();
 
-    let invoc = match CommandInvocation::parse(env::args().skip(1), &root) {
+    let context = match fsrepo::best_known_path() {
+        Err(e) => panic!("{}", e),
+        Ok(path) => request::Context::new(path),
+    };
+
+    let invoc = match CommandInvocation::from_parse(env::args().skip(1), &root, context) {
         Err(e) => panic!("{}", e),
         Ok(invoc) => invoc,
     };
-
-    for (k, v) in invoc.request.options() {
-        println!("{}: {:?}", k, v);
-    }
 
     invoc.run();
 }
@@ -58,7 +64,7 @@ fn make_root_command() -> commands::Command {
         "Show the full command help text"
     );
 
-    fn run(req: &commands::request::Request)  -> Result<(), String> {
+    fn run(req: &request::Request)  -> Result<(), String> {
         println!("{}\n{}\n{}",
                  req.command.help_text.tagline,
                  req.command.help_text.short_desc,
@@ -74,7 +80,7 @@ fn make_root_command() -> commands::Command {
 }
 
 fn make_init_command() -> commands::Command {
-    fn run(req: &commands::request::Request)  -> Result<(), String> {
+    fn run(req: &request::Request)  -> Result<(), String> {
         println!("Hello from the init command!");
         Ok(())
     }

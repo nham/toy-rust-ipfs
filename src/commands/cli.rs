@@ -4,11 +4,10 @@ use super::request::{self, Request};
 use std::collections::HashMap;
 
 pub type ParseError = String;
-
+pub type ParseResult<'a> = (Vec<(super::OptName, request::Opt)>, &'a Command);
 // TODO: support command arguments
 // TODO: support setting option arguments with equal sign (--opt=value)
-pub fn parse<I>(mut input: I, root: &Command)
-            -> Result<(Request, &Command), ParseError>
+pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
     where I : Iterator<Item=String>
 {
     /*
@@ -74,5 +73,5 @@ pub fn parse<I>(mut input: I, root: &Command)
             current_cmd = subcmd;
         }
     }
-    Ok((Request::new(opts, current_cmd), current_cmd))
+    Ok((opts, current_cmd))
 }

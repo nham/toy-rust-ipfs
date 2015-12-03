@@ -86,9 +86,11 @@ pub enum OptType {
     Int,
 }
 
+pub type OptName = &'static str;
+
 // represents an option for a command
 pub struct Opt {
-    name: &'static str, // canonical name for the option
+    name: OptName, // canonical name for the option
     pub names: Vec<&'static str>,
     pub opt_type: OptType,
     description: &'static str,
