@@ -92,7 +92,14 @@ fn make_init_command() -> commands::Command {
         if try!(fsrepo::is_locked(repo_dir.clone())) {
             return Err("Another process has locked the repo. Unable to continue.".to_string());
         }
+
         try!(check_and_prepare_repo_dir(repo_dir.clone()));
+
+        if fsrepo::is_initialized(repo_dir.clone()) {
+            return Err("IPFS repo already exists.\n\
+                        Reinitializing would overwrite your keys.\n\
+                        (Use -f to force reinitialization.)".to_string())
+        }
 
         println!("Hello from the init command!");
         Ok(())

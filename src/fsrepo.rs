@@ -1,30 +1,30 @@
 use config;
+use util;
 
 use libc;
 
 use std::env;
-use std::fs::{File, metadata};
+use std::fs::File;
 use std::io;
 use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 
 const LOCK_FILE: &'static str = "repo.lock";
+const DATASTORE_DIR: &'static str = "datastore";
 
 // TODO: make this work across multiple threads?
 pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
     repo_path.push(LOCK_FILE);
 
-    match metadata(&repo_path) {
-        Err(e) =>
-            if let io::ErrorKind::NotFound = e.kind() {
-                return Ok(false);
-            },
+    match util::file_exists(&repo_path) {
+        Ok(false) => return Ok(false),
         _ => {},
     }
 
     match lock(&repo_path) {
         Err(e) =>
             match e.kind() {
+                // TODO: is WouldBlock correct here?
                 io::ErrorKind::WouldBlock => Ok(true),
                 _ => Err(format!("{}", e)),
             },
@@ -93,4 +93,26 @@ fn expand_tilde(s: String) -> Result<PathBuf, ()> {
     } else {
         Ok(PathBuf::from(s))
     }
+}
+
+
+// TODO: ensure this process can't modify the repo while this check is in progress
+// assumes that we have sufficient permission to the repo directory,
+// so doesn't worry about any permissions errors from checking existence
+pub fn is_initialized(mut repo_path: PathBuf) -> bool  {
+    let config_path = config::repo_path_to_config_file(repo_path.clone());
+    // unwrap is "safe" here because the function assumes that there are no
+    // permissions errors, so file_exists() should not return an error
+    if !util::file_exists_expect(config_path) {
+        return false;
+    }
+
+    // TODO: why does the analogous function in go-ipfs only check the
+    // datastore directory? what about blocks and log directories
+    repo_path.push(DATASTORE_DIR);
+    if !util::file_exists_expect(repo_path) {
+        return false;
+    }
+
+    true
 }
