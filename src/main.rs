@@ -15,6 +15,9 @@ mod util;
 use commands::request;
 
 use std::env;
+use std::fs::{self, File};
+use std::io;
+use std::path;
 
 struct CommandInvocation<'a> {
     pub request: request::Request<'a>,
@@ -85,12 +88,39 @@ fn make_root_command() -> commands::Command {
 
 fn make_init_command() -> commands::Command {
     fn run(req: &request::Request)  -> Result<(), String> {
-        if try!(fsrepo::is_locked(req.context.repo_dir.clone())) {
+        let repo_dir = req.context.repo_dir.clone();
+        if try!(fsrepo::is_locked(repo_dir.clone())) {
             return Err("Another process has locked the repo. Unable to continue.".to_string());
         }
+        try!(check_and_prepare_repo_dir(repo_dir.clone()));
+
         println!("Hello from the init command!");
         Ok(())
     }
 
     commands::Command::new(vec![], vec![], run, init::InitHelpText, vec![])
+}
+
+
+// if the directory exists, try creating a file in it.
+// if the directory doesnt exist, try to create it
+// if either of these fail, return an error
+fn check_and_prepare_repo_dir(mut repo_path: path::PathBuf) -> Result<(), String> {
+    match fs::metadata(&repo_path) {
+        Err(e) =>
+            match e.kind() {
+                io::ErrorKind::NotFound =>
+                    fs::create_dir_all(repo_path)
+                        .map_err(|e| format!("Error creating repo directory: {}", e)),
+                _ => Err(format!("Error checking repo directory: {}", e)),
+            },
+        Ok(_) => {
+            repo_path.push("test");
+            // discard the File as we don't need it.
+            try!(File::create(&repo_path)
+                    .map_err(|e| format!("Error creating test file: {}", e)));
+            fs::remove_file(&repo_path)
+                .map_err(|e| format!("Error removing test file: {}", e))
+        },
+    }
 }

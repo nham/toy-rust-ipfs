@@ -10,11 +10,11 @@ use std::path::PathBuf;
 
 const LOCK_FILE: &'static str = "repo.lock";
 
+// TODO: make this work across multiple threads?
 pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
     repo_path.push(LOCK_FILE);
 
-    println!("in is_locked, testing for file {:?}", &repo_path);
-    match metadata(repo_path.clone()) {
+    match metadata(&repo_path) {
         Err(e) =>
             if let io::ErrorKind::NotFound = e.kind() {
                 return Ok(false);
@@ -22,8 +22,7 @@ pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
         _ => {},
     }
 
-    println!("in is_locked, file exists");
-    match lock(repo_path) {
+    match lock(&repo_path) {
         Err(e) =>
             match e.kind() {
                 io::ErrorKind::WouldBlock => Ok(true),
@@ -33,12 +32,10 @@ pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
     }
 }
 
-pub fn lock(mut repo_path: PathBuf) -> Result<File, io::Error> {
-
+// TODO: make this work across multiple threads?
+pub fn lock(repo_path: &PathBuf) -> Result<File, io::Error> {
     let file = try!(File::create(repo_path));
-    println!("in lock, file created");
     try!(fcntl(&file, 6)); // no F_SETLK in libc. :(
-    println!("in lock, file was locked");
     Ok(file)
 }
 
@@ -89,7 +86,7 @@ fn expand_tilde(s: String) -> Result<PathBuf, ()> {
         match env::home_dir() {
             None => Err(()),
             Some(mut dir) => {
-                dir.push(&s[1..]);
+                dir.push(&s[2..]);
                 Ok(PathBuf::from(dir))
             }
         }
