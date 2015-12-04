@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Nick Hamann <nick@wabbo.org>"]
 
 [dependencies]
-fs2 = "0.2"
+libc = "0.2"
 openssl = "0.7"
 rust-multihash = { git = "https://github.com/nham/rust-multihash.git" }
 

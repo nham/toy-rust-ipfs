@@ -1,4 +1,4 @@
-extern crate fs2;
+extern crate libc;
 extern crate openssl;
 extern crate rust_multihash;
 #[cfg(test)] extern crate rustc_serialize;
@@ -51,7 +51,10 @@ fn main() {
         Ok(invoc) => invoc,
     };
 
-    invoc.run();
+    match invoc.run() {
+        Err(e) => println!("{}", e),
+        _ => {},
+    }
 }
 
 fn make_root_command() -> commands::Command {
