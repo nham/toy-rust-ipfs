@@ -1,12 +1,13 @@
 extern crate libc;
 extern crate openssl;
 extern crate rust_multihash;
-#[cfg(test)] extern crate rustc_serialize;
+extern crate rustc_serialize;
 
 mod block;
 mod blockstore;
 mod commands;
 mod config;
+mod crypto;
 mod init;
 mod fsrepo;
 mod root; // TODO: where should this module reside?
@@ -100,6 +101,8 @@ fn make_init_command() -> commands::Command {
                         Reinitializing would overwrite your keys.\n\
                         (Use -f to force reinitialization.)".to_string())
         }
+
+        let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
 
         println!("Hello from the init command!");
         Ok(())

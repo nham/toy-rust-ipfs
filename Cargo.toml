@@ -7,6 +7,4 @@ authors = ["Nick Hamann <nick@wabbo.org>"]
 libc = "0.2"
 openssl = "0.7"
 rust-multihash = { git = "https://github.com/nham/rust-multihash.git" }
-
-[dev-dependencies]
 rustc-serialize = "0.3"
