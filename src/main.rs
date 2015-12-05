@@ -1,3 +1,4 @@
+extern crate atomicwrites;
 extern crate libc;
 extern crate openssl;
 extern crate rust_multihash;
@@ -104,8 +105,7 @@ fn make_init_command() -> commands::Command {
 
         let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
 
-        println!("Hello from the init command!");
-        Ok(())
+        fsrepo::init(repo_dir, &config)
     }
 
     commands::Command::new(vec![], vec![], run, init::InitHelpText, vec![])

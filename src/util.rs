@@ -1,6 +1,6 @@
 use rust_multihash as multihash;
 
-use std::fs;
+use std::fs::{self, File};
 use std::io;
 use std::path::Path;
 
@@ -23,4 +23,13 @@ pub fn file_exists<P: AsRef<Path>>(path: P) -> io::Result<bool> {
             },
         Ok(_) => Ok(true),
     }
+}
+
+pub fn ensure_dir_writable<P: AsRef<Path>>(path: P) -> io::Result<()> {
+    try!(fs::create_dir_all(&path));
+
+    let mut path = path.as_ref().to_path_buf();
+    path.push(".test_writable");
+    let file = File::create(path);
+    Ok(())
 }

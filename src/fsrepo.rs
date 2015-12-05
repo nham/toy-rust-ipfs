@@ -3,14 +3,17 @@ use util;
 
 use libc;
 
+use atomicwrites::{AtomicFile, DisallowOverwrite};
 use std::env;
 use std::fs::File;
-use std::io;
+use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const LOCK_FILE: &'static str = "repo.lock";
 const DATASTORE_DIR: &'static str = "datastore";
+const BLOCKSTORE_DIR: &'static str = "blocks";
+const LOGS_DIR: &'static str = "logs";
 
 // TODO: make this work across multiple threads?
 pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
@@ -115,4 +118,48 @@ pub fn is_initialized(mut repo_path: PathBuf) -> bool  {
     }
 
     true
+}
+
+pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> {
+    // Don't initialize if already initialized.
+    if is_initialized(repo_path.clone()) {
+        return Ok(());
+    }
+
+    let config_path = config::repo_path_to_config_file(repo_path.clone());
+    try!(write_config_file(config_path, cfg));
+
+    let mut datastore_path = repo_path.clone();
+    datastore_path.push(DATASTORE_DIR);
+    try!(util::ensure_dir_writable(datastore_path)
+            .map_err(|e| format!("Error checking writability of datastore dir: {}", e)));
+
+    let mut blockstore_path = repo_path.clone();
+    blockstore_path.push(BLOCKSTORE_DIR);
+    try!(util::ensure_dir_writable(blockstore_path)
+            .map_err(|e| format!("Error checking writability of blockstore dir: {}", e)));
+
+    let mut logs_path = repo_path.clone();
+    logs_path.push(LOGS_DIR);
+    try!(util::ensure_dir_writable(logs_path)
+            .map_err(|e| format!("Error checking writability of logs dir: {}", e)));
+
+    Ok(())
+}
+
+// Check that the config file doesn't exist before calling this
+fn init_config(mut repo_path: PathBuf) {
+    let config_path = config::repo_path_to_config_file(repo_path.clone());
+}
+
+// Caller should ensure the directory exists before calling
+fn write_config_file<P: AsRef<Path>>(file_path: P, cfg: &config::Config) -> Result<(), String> {
+    let s = match cfg.to_json_string() {
+        Err(e) => return Err(format!("Error encoding config as Json: {}", e)),
+        Ok(s) => s,
+    };
+
+    let file = AtomicFile::new(file_path, DisallowOverwrite);
+    file.write(|f| f.write_all(s.as_bytes()))
+        .map_err(|e| format!("Error writing config file: {}", e))
 }
