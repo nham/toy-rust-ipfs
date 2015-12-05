@@ -62,4 +62,8 @@ impl<'a> Request<'a> {
     pub fn options(&self) -> hash_map::Iter<&'static str, Opt> {
         self.options.iter()
     }
+
+    pub fn option(&self, name: &'static str) -> Option<&Opt> {
+        self.options.get(&name)
+    }
 }

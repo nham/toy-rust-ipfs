@@ -5,7 +5,7 @@ use libc;
 
 use atomicwrites::{AtomicFile, DisallowOverwrite};
 use std::env;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
@@ -118,6 +118,10 @@ pub fn is_initialized(mut repo_path: PathBuf) -> bool  {
     }
 
     true
+}
+
+pub fn remove<P: AsRef<Path>>(repo_path: P) -> Result<(), String> {
+    fs::remove_dir_all(repo_path).map_err(|e| format!("Error removing repo: {}", e))
 }
 
 pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> {

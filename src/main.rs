@@ -89,6 +89,11 @@ fn make_root_command() -> commands::Command {
 }
 
 fn make_init_command() -> commands::Command {
+    let force = commands::Opt::new_bool(
+        vec!["f", "force"],
+        "Overwrite existing configuration (if it exists)"
+    );
+
     fn run(req: &request::Request)  -> Result<(), String> {
         let repo_dir = req.context.repo_dir.clone();
         if try!(fsrepo::is_locked(repo_dir.clone())) {
@@ -98,9 +103,13 @@ fn make_init_command() -> commands::Command {
         try!(check_and_prepare_repo_dir(repo_dir.clone()));
 
         if fsrepo::is_initialized(repo_dir.clone()) {
-            return Err("IPFS repo already exists.\n\
-                        Reinitializing would overwrite your keys.\n\
-                        (Use -f to force reinitialization.)".to_string())
+            if req.option("f").is_some() {
+                try!(fsrepo::remove(&repo_dir));
+            } else {
+                return Err("IPFS repo already exists.\n\
+                            Reinitializing would overwrite your keys.\n\
+                            (Use -f to force reinitialization.)".to_string())
+            }
         }
 
         let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
@@ -108,7 +117,7 @@ fn make_init_command() -> commands::Command {
         fsrepo::init(repo_dir, &config)
     }
 
-    commands::Command::new(vec![], vec![], run, init::InitHelpText, vec![])
+    commands::Command::new(vec![force], vec![], run, init::InitHelpText, vec![])
 }
 
 
