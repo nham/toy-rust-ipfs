@@ -105,6 +105,9 @@ fn make_init_command() -> commands::Command {
         if fsrepo::is_initialized(repo_dir.clone()) {
             if req.option("f").is_some() {
                 try!(fsrepo::remove(&repo_dir));
+                try!(util::ensure_dir_writable(&repo_dir)
+                        .map_err(|e| format!("Error ensuring repo directory is writable \
+                                  after forced removal: {}", e)));
             } else {
                 return Err("IPFS repo already exists.\n\
                             Reinitializing would overwrite your keys.\n\

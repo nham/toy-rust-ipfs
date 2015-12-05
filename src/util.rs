@@ -30,6 +30,6 @@ pub fn ensure_dir_writable<P: AsRef<Path>>(path: P) -> io::Result<()> {
 
     let mut path = path.as_ref().to_path_buf();
     path.push(".test_writable");
-    let file = File::create(path);
-    Ok(())
+    try!(File::create(&path));
+    fs::remove_file(path)
 }
