@@ -4,6 +4,7 @@ extern crate openssl;
 extern crate rust_multihash;
 extern crate rustc_serialize;
 
+mod add;
 mod block;
 mod blockstore;
 mod commands;
@@ -33,8 +34,8 @@ impl<'a> CommandInvocation<'a> {
                 -> Result<CommandInvocation<'a>, ParseError>
         where I : Iterator<Item=String>
     {
-        let (opts, cmd) = try!(commands::cli::parse(args, root));
-        let req = request::Request::new(opts, cmd, context);
+        let (cmd, args, opts) = try!(commands::cli::parse(args, root));
+        let req = request::Request::new(cmd, args, opts, context);
         Ok(CommandInvocation { request: req, command: cmd })
     }
 
@@ -85,7 +86,10 @@ fn make_root_command() -> commands::Command {
                            vec![],
                            run,
                            root::RootHelpText,
-                           vec![("init", make_init_command())])
+                           vec![
+                            ("init", make_init_command()),
+                            ("add", add::make_add_command()),
+                           ])
 }
 
 fn make_init_command() -> commands::Command {

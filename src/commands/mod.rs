@@ -29,6 +29,7 @@ pub struct Command {
 }
 
 impl Command {
+    // TODO: disallow an argument that isnt the last argument from being variadic
     pub fn new(options: Vec<Opt>,
                arguments: Vec<Argument>,
                run: RunFn,
@@ -74,6 +75,10 @@ impl Command {
         self.subcommands.get(subcmd)
     }
 
+    pub fn arguments(&self) -> &[Argument] {
+        &self.arguments[..]
+    }
+
     pub fn run(&self, req: &request::Request) -> Result<(), String> {
         (self.run)(req)
     }
@@ -117,13 +122,36 @@ impl Opt {
 }
 
 enum ArgumentType {
-    ArgString,
-    ArgFile,
+    String,
+    File,
 }
 
 pub struct Argument {
-    name: String,
+    name: &'static str,
     ty: ArgumentType,
     required: bool,
-    description: String,
+    variadic: bool,
+    description: &'static str,
+}
+
+impl Argument {
+    pub fn new_file(name: &'static str, required: bool, variadic: bool,
+                desc: &'static str) -> Self {
+        Self::new(name, ArgumentType::File, required, variadic, desc)
+    }
+
+    fn new(name: &'static str, ty: ArgumentType, required: bool, variadic: bool,
+           desc: &'static str) -> Self {
+        Argument {
+            name: name,
+            ty: ty,
+            required: required,
+            variadic: variadic,
+            description: desc,
+        }
+    }
+
+    pub fn is_variadic(&self) -> bool {
+        self.variadic
+    }
 }

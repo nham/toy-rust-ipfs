@@ -4,7 +4,7 @@ use super::request::{self, Request};
 use std::collections::HashMap;
 
 pub type ParseError = String;
-pub type ParseResult<'a> = (Vec<(super::OptName, request::Opt)>, &'a Command);
+pub type ParseResult<'a> = (&'a Command, Vec<request::Arg>, Vec<(super::OptName, request::Opt)>);
 // TODO: support command arguments
 // TODO: support setting option arguments with equal sign (--opt=value)
 pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
@@ -17,6 +17,8 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
      */
     let mut current_cmd = root;
     let mut opts: Vec<(&'static str, request::Opt)> = Vec::new();
+    let mut args: Vec<request::Arg> = Vec::new();
+
     let mut cmd_opts = HashMap::new();
     cmd_opts.extend(root.options());
 
@@ -63,15 +65,28 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             }
 
         } else {
-            // no arguments for now, so it must be a subcommand!
-            let subcmd = match current_cmd.subcommand(&token) {
-                None => return Err(format!("Subcommand {} not found", &token)),
-                Some(cmd) => cmd,
-            };
+            let num_args = current_cmd.arguments.len();
+            if num_args == 0 {
+                let subcmd = match current_cmd.subcommand(&token) {
+                    None => return Err(format!("Subcommand {} not found", &token)),
+                    Some(cmd) => cmd,
+                };
 
-            cmd_opts.extend(subcmd.options());
-            current_cmd = subcmd;
+                cmd_opts.extend(subcmd.options());
+                current_cmd = subcmd;
+            } else {
+                args.push(token);
+            }
         }
     }
-    Ok((opts, current_cmd))
+
+    let num_args = current_cmd.arguments.len();
+
+    if num_args != args.len()
+        && !current_cmd.arguments()[num_args - 1].is_variadic() {
+        return Err(format!("Incorrect number of arguments supplied: expected {}, found {}",
+                            num_args, args.len()));
+    }
+
+    Ok((current_cmd, args, opts))
 }

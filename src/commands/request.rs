@@ -34,6 +34,8 @@ impl Opt {
     }
 }
 
+pub type Arg = String;
+
 pub struct Context {
     pub repo_dir: PathBuf,
 }
@@ -45,18 +47,27 @@ impl Context {
 }
 
 pub struct Request<'a> {
-    options: HashMap<super::OptName, Opt>,
     pub command: &'a Command,
+    arguments: Vec<Arg>,
+    options: HashMap<super::OptName, Opt>,
     pub context: Context,
 }
 
 impl<'a> Request<'a> {
-    pub fn new(opts: Vec<(super::OptName, Opt)>, cmd: &'a Command, context: Context) -> Self {
+    pub fn new(cmd: &'a Command,
+               args: Vec<Arg>,
+               opts: Vec<(super::OptName, Opt)>,
+               context: Context) -> Self {
         Request {
-            options: opts.into_iter().collect(),
             command: cmd,
+            arguments: args,
+            options: opts.into_iter().collect(),
             context: context,
         }
+    }
+
+    pub fn args(&self) -> &[Arg] {
+        &self.arguments[..]
     }
 
     pub fn options(&self) -> hash_map::Iter<&'static str, Opt> {

@@ -151,11 +151,6 @@ pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> 
     Ok(())
 }
 
-// Check that the config file doesn't exist before calling this
-fn init_config(mut repo_path: PathBuf) {
-    let config_path = config::repo_path_to_config_file(repo_path.clone());
-}
-
 // Caller should ensure the directory exists before calling
 fn write_config_file<P: AsRef<Path>>(file_path: P, cfg: &config::Config) -> Result<(), String> {
     let s = match cfg.to_json_string() {
