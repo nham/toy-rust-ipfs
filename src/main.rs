@@ -55,7 +55,7 @@ fn main() {
     };
 
     let invoc = match CommandInvocation::from_parse(env::args().skip(1), &root, context) {
-        Err(e) => panic!("{}", e),
+        Err(e) => { println!("{}", e); return },
         Ok(invoc) => invoc,
     };
 
