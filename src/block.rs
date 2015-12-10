@@ -14,6 +14,14 @@ impl Block {
         }
     }
 
+    pub fn get_multihash(&self) -> &Multihash {
+        &self.multihash
+    }
+
+    pub fn get_data(&self) -> &[u8] {
+        &self.data[..]
+    }
+
     pub fn clone_multihash(&self) -> Multihash {
         self.multihash.clone()
     }

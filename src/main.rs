@@ -1,6 +1,7 @@
 extern crate atomicwrites;
 extern crate libc;
 extern crate openssl;
+extern crate protobuf;
 extern crate rust_multihash;
 extern crate rustc_serialize;
 
@@ -12,6 +13,7 @@ mod config;
 mod crypto;
 mod init;
 mod fsrepo;
+mod merkledag;
 mod root; // TODO: where should this module reside?
 mod util;
 

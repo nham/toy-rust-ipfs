@@ -7,5 +7,6 @@ authors = ["Nick Hamann <nick@wabbo.org>"]
 atomicwrites = "0.0"
 libc = "0.2"
 openssl = "0.7"
+protobuf = "1.0"
 rust-multihash = { git = "https://github.com/nham/rust-multihash.git" }
 rustc-serialize = "0.3"
