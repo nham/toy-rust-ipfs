@@ -48,7 +48,7 @@ impl Command {
         }
     }
 
-    pub fn options(&self) -> Vec<(&'static str, &Opt)> {
+    pub fn options(&self) -> Vec<(OptName, &Opt)> {
         let mut v = Vec::new();
         for opt in self.options.iter() {
             for &name in opt.names.iter() {
@@ -96,18 +96,18 @@ pub type OptName = &'static str;
 // represents an option for a command
 pub struct Opt {
     name: OptName, // canonical name for the option
-    pub names: Vec<&'static str>,
+    pub names: Vec<OptName>,
     pub opt_type: OptType,
     description: &'static str,
 }
 
 impl Opt {
     // The first name in the `names` vector is used as canonical name
-    pub fn new_bool(names: Vec<&'static str>, desc: &'static str) -> Self {
+    pub fn new_bool(names: Vec<OptName>, desc: &'static str) -> Self {
         Self::new(names, OptType::Bool, desc)
     }
 
-    fn new(mut names: Vec<&'static str>, opt_type: OptType, desc: &'static str) -> Self {
+    fn new(mut names: Vec<OptName>, opt_type: OptType, desc: &'static str) -> Self {
         let canonical = names[0];
         names.sort_by(|a, b| a.len().cmp(&b.len()));
         Opt {
@@ -118,7 +118,7 @@ impl Opt {
         }
     }
 
-    pub fn name(&self) -> &'static str { self.name }
+    pub fn name(&self) -> OptName { self.name }
 }
 
 enum ArgumentType {
@@ -126,8 +126,10 @@ enum ArgumentType {
     File,
 }
 
+pub type ArgName = &'static str;
+
 pub struct Argument {
-    name: &'static str,
+    name: ArgName,
     ty: ArgumentType,
     required: bool,
     variadic: bool,
@@ -135,12 +137,12 @@ pub struct Argument {
 }
 
 impl Argument {
-    pub fn new_file(name: &'static str, required: bool, variadic: bool,
+    pub fn new_file(name: ArgName, required: bool, variadic: bool,
                 desc: &'static str) -> Self {
         Self::new(name, ArgumentType::File, required, variadic, desc)
     }
 
-    fn new(name: &'static str, ty: ArgumentType, required: bool, variadic: bool,
+    fn new(name: ArgName, ty: ArgumentType, required: bool, variadic: bool,
            desc: &'static str) -> Self {
         Argument {
             name: name,
