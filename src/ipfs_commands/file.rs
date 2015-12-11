@@ -1,5 +1,9 @@
 use commands::{HelpText, Command, Argument};
 use commands::request;
+use unixfs;
+
+use rust_multihash::Multihash;
+use std::collections::HashMap;
 
 const FileHelpText: HelpText = HelpText {
     tagline:  "Interact with ipfs objects representing Unix filesystems",
@@ -32,6 +36,20 @@ pub fn make_command() -> Command {
     Command::new(vec![], vec![], run, FileHelpText, vec![("ls", make_ls_command())])
 }
 
+struct LsLink {
+    name: String,
+    hash: Multihash,
+    size: u64,
+    ty: unixfs::pb::Data_DataType,
+}
+
+struct LsObject {
+    hash: Multihash,
+    size: u64,
+    ty: unixfs::pb::Data_DataType,
+    links: Vec<LsLink>,
+}
+
 fn make_ls_command() -> Command {
     let arg_path = Argument::new_string(
         "ipfs-path",
@@ -40,7 +58,19 @@ fn make_ls_command() -> Command {
         "The path(s) to the IPFS object(s) to list links from"
     );
 
+    // TODO: this is only going to accept hashes for now. Need to implement
+    // path resolver so it can do paths.
     fn run(req: &request::Request)  -> Result<(), String> {
+        let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
+
+        for path in req.string_arg("path").unwrap() {
+            println!("path: {:?}", path);
+            // retrieve merkledag node for the path (multihash, at this point)
+            let node = TODO_build_the_merkledag(path);
+            let unixfs_data = unixfs::pb::from_reader(node.get_data());
+
+            objects.insert(node.multihash(), _);
+        }
         unimplemented!()
     }
 

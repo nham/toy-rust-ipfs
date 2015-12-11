@@ -15,6 +15,7 @@ mod fsrepo;
 mod merkledag;
 mod root; // TODO: where should this module reside?
 mod util;
+mod unixfs;
 
 use commands::request;
 

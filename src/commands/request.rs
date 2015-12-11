@@ -67,6 +67,22 @@ impl Arg {
     pub fn new_file_arg(v: Vec<FileArg>) -> Self {
         Arg::Files(v)
     }
+
+    // Panics if the Arg is not a string argument
+    fn get_string(&self) -> &[String] {
+        match *self {
+            Arg::Files(_) => panic!("Could not get_strings, Arg is a file argument"),
+            Arg::Strings(ref v) => &v[..],
+        }
+    }
+
+    // Panics if the Arg is not a file argument
+    fn get_file(&self) -> &[FileArg] {
+        match *self {
+            Arg::Strings(_) => panic!("Could not get_files, Arg is a string argument"),
+            Arg::Files(ref v) => &v[..],
+        }
+    }
 }
 
 pub struct Context {
@@ -100,15 +116,23 @@ impl<'a> Request<'a> {
         }
     }
 
-    pub fn args(&self) -> hash_map::Iter<&'static str, Arg> {
+    pub fn args(&self) -> hash_map::Iter<super::ArgName, Arg> {
         self.arguments.iter()
     }
 
-    pub fn options(&self) -> hash_map::Iter<&'static str, Opt> {
+    pub fn string_arg(&self, name: super::ArgName) -> Option<&[String]> {
+        self.arguments.get(&name).map(|arg| arg.get_string())
+    }
+
+    pub fn file_arg(&self, name: super::ArgName) -> Option<&[FileArg]> {
+        self.arguments.get(&name).map(|arg| arg.get_file())
+    }
+
+    pub fn options(&self) -> hash_map::Iter<super::OptName, Opt> {
         self.options.iter()
     }
 
-    pub fn option(&self, name: &'static str) -> Option<&Opt> {
+    pub fn option(&self, name: super::OptName) -> Option<&Opt> {
         self.options.get(&name)
     }
 }
