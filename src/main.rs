@@ -5,13 +5,12 @@ extern crate protobuf;
 extern crate rust_multihash;
 extern crate rustc_serialize;
 
-mod add;
+mod ipfs_commands;
 mod block;
 mod blockstore;
 mod commands;
 mod config;
 mod crypto;
-mod init;
 mod fsrepo;
 mod merkledag;
 mod root; // TODO: where should this module reside?
@@ -20,9 +19,6 @@ mod util;
 use commands::request;
 
 use std::env;
-use std::fs::{self, File};
-use std::io;
-use std::path;
 
 struct CommandInvocation<'a> {
     pub request: request::Request<'a>,
@@ -89,66 +85,8 @@ fn make_root_command() -> commands::Command {
                            run,
                            root::RootHelpText,
                            vec![
-                            ("init", make_init_command()),
-                            ("add", add::make_add_command()),
+                            ("init", ipfs_commands::init::make_command()),
+                            ("add", ipfs_commands::add::make_command()),
+                            ("file", ipfs_commands::file::make_command()),
                            ])
-}
-
-fn make_init_command() -> commands::Command {
-    let force = commands::Opt::new_bool(
-        vec!["f", "force"],
-        "Overwrite existing configuration (if it exists)"
-    );
-
-    fn run(req: &request::Request)  -> Result<(), String> {
-        let repo_dir = req.context.repo_dir.clone();
-        if try!(fsrepo::is_locked(repo_dir.clone())) {
-            return Err("Another process has locked the repo. Unable to continue.".to_string());
-        }
-
-        try!(check_and_prepare_repo_dir(repo_dir.clone()));
-
-        if fsrepo::is_initialized(repo_dir.clone()) {
-            if req.option("f").is_some() {
-                try!(fsrepo::remove(&repo_dir));
-                try!(util::ensure_dir_writable(&repo_dir)
-                        .map_err(|e| format!("Error ensuring repo directory is writable \
-                                  after forced removal: {}", e)));
-            } else {
-                return Err("IPFS repo already exists.\n\
-                            Reinitializing would overwrite your keys.\n\
-                            (Use -f to force reinitialization.)".to_string())
-            }
-        }
-
-        let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
-
-        fsrepo::init(repo_dir, &config)
-    }
-
-    commands::Command::new(vec![force], vec![], run, init::InitHelpText, vec![])
-}
-
-
-// if the directory exists, try creating a file in it.
-// if the directory doesnt exist, try to create it
-// if either of these fail, return an error
-fn check_and_prepare_repo_dir(mut repo_path: path::PathBuf) -> Result<(), String> {
-    match fs::metadata(&repo_path) {
-        Err(e) =>
-            match e.kind() {
-                io::ErrorKind::NotFound =>
-                    fs::create_dir_all(repo_path)
-                        .map_err(|e| format!("Error creating repo directory: {}", e)),
-                _ => Err(format!("Error checking repo directory: {}", e)),
-            },
-        Ok(_) => {
-            repo_path.push("test");
-            // discard the File as we don't need it.
-            try!(File::create(&repo_path)
-                    .map_err(|e| format!("Error creating test file: {}", e)));
-            fs::remove_file(&repo_path)
-                .map_err(|e| format!("Error removing test file: {}", e))
-        },
-    }
 }

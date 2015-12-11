@@ -143,6 +143,11 @@ impl Argument {
         Self::new(name, ArgumentType::File, required, variadic, desc)
     }
 
+    pub fn new_string(name: ArgName, required: bool, variadic: bool,
+                desc: &'static str) -> Self {
+        Self::new(name, ArgumentType::String, required, variadic, desc)
+    }
+
     fn new(name: ArgName, ty: ArgumentType, required: bool, variadic: bool,
            desc: &'static str) -> Self {
         Argument {

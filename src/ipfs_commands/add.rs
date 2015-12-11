@@ -7,7 +7,7 @@ const AddHelpText: HelpText = HelpText {
     short_desc: "Adds contents of <path> to ipfs.",
 };
 
-pub fn make_add_command() -> Command {
+pub fn make_command() -> Command {
     let arg_path = Argument::new_file(
         "path",
         true,
@@ -19,9 +19,11 @@ pub fn make_add_command() -> Command {
         for arg in req.args() {
             println!("arg: {:?}", arg);
         }
+
         unimplemented!()
     }
 
     Command::new(vec![], vec![arg_path], run, AddHelpText, vec![])
 }
 
+// fn add_file<P: AsRef<Path>>(path: P)
