@@ -121,6 +121,7 @@ impl Opt {
     pub fn name(&self) -> OptName { self.name }
 }
 
+#[derive(Copy, Clone)]
 enum ArgumentType {
     String,
     File,
@@ -156,4 +157,8 @@ impl Argument {
     pub fn is_variadic(&self) -> bool {
         self.variadic
     }
+
+    pub fn name(&self) -> ArgName { self.name }
+
+    pub fn arg_type(&self) -> ArgumentType { self.ty }
 }

@@ -17,7 +17,7 @@ pub fn make_add_command() -> Command {
 
     fn run(req: &request::Request)  -> Result<(), String> {
         for arg in req.args() {
-            println!("arg: {}", arg);
+            println!("arg: {:?}", arg);
         }
         unimplemented!()
     }
