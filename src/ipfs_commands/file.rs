@@ -29,13 +29,14 @@ size is the IPFS link size.
 };
 
 pub fn make_command() -> Command {
-    fn run(req: &request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request)  -> Result<(), String> {
         unimplemented!()
     }
 
     Command::new(vec![], vec![], run, FileHelpText, vec![("ls", make_ls_command())])
 }
 
+#[derive(Debug)]
 struct LsLink {
     name: String,
     hash: Multihash,
@@ -43,6 +44,7 @@ struct LsLink {
     ty: unixfs::pb::Data_DataType,
 }
 
+#[derive(Debug)]
 struct LsObject {
     hash: Multihash,
     size: u64,
@@ -60,18 +62,35 @@ fn make_ls_command() -> Command {
 
     // TODO: this is only going to accept hashes for now. Need to implement
     // path resolver so it can do paths.
-    fn run(req: &request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request)  -> Result<(), String> {
+        try!(req.context.construct_node());
+        let node = req.context.node.as_ref().unwrap();
+
+        println!("got a node");
+
         let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
 
-        for path in req.string_arg("path").unwrap() {
+        for path in req.string_arg("ipfs-path").unwrap() {
             println!("path: {:?}", path);
+            let mh = try!(Multihash::from_base58_str(&path));
             // retrieve merkledag node for the path (multihash, at this point)
-            let node = TODO_build_the_merkledag(path);
-            let unixfs_data = unixfs::pb::from_reader(node.get_data());
+            let dag_node = try!(node.dagservice.get(&mh));
+            let unixfs_data = try!(unixfs::from_reader(&mut dag_node.get_data()));
 
-            objects.insert(node.multihash(), _);
+            // TODO: fix links
+            let ls_obj = LsObject {
+                hash: mh,
+                size: unixfs_data.get_filesize(),
+                ty: unixfs_data.get_Type(),
+                links: vec![],
+            };
+
+            objects.insert(dag_node.multihash(), ls_obj);
         }
-        unimplemented!()
+
+        for (hash, obj) in &objects {
+            println!("{:?}: {:?}", hash, obj);
+        }
     }
 
     Command::new(vec![], vec![arg_path], run, FileHelpText, vec![])

@@ -10,6 +10,8 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 const BLOCKFILE_EXT: &'static str = ".data";
+const BLOCKSTORE_PREFIX_LENGTH: u8 = 4; // in bytes
+pub const BLOCKSTORE_DIR: &'static str = "blocks";
 
 pub struct Blockstore {
     path: PathBuf,
@@ -21,8 +23,8 @@ impl Blockstore {
     // the block data will be stored as a file in the directory
     // <blockstore dir>/<hex encoding of [x1 ... xk]/
     // where k = prefix_len
-    pub fn new(path: PathBuf, prefix_len: u8) -> Self {
-        Blockstore { path: path, hex_prefix_length: 2*prefix_len }
+    pub fn new(path: PathBuf) -> Self {
+        Blockstore { path: path, hex_prefix_length: 2*BLOCKSTORE_PREFIX_LENGTH }
     }
 
     pub fn has(&self, multihash: &Multihash) -> Result<bool, String> {
@@ -31,14 +33,17 @@ impl Blockstore {
                                    Blockstore::has: {}", e))
     }
 
-    pub fn put(&self, block: &block::Block) -> Result<(), String> {
-        let mh = block.get_multihash();
-        match self.has(mh) {
+    pub fn get(&self, hash: &Multihash) -> Result<block::Block, String> {
+        unimplemented!()
+    }
+
+    pub fn put(&self, multihash: &Multihash, data: &[u8]) -> Result<(), String> {
+        match self.has(multihash) {
             Ok(true) => return Ok(()),
             _ => {},
         }
 
-        let (mut dir, filename) = self.block_dir_and_file(mh);
+        let (mut dir, filename) = self.block_dir_and_file(multihash);
         try!(make_prefix_dir(&dir)
              .map_err(|e| format!("Error making prefix directory for put: {}", e)));
 
@@ -46,7 +51,7 @@ impl Blockstore {
         dir.push(filename);
         let file_path = dir; // rename for clarity
         let file = AtomicFile::new(file_path, DisallowOverwrite);
-        file.write(|f| f.write_all(block.get_data()))
+        file.write(|f| f.write_all(data))
             .map_err(|e| format!("Error writing block file for put: {}", e))
     }
 

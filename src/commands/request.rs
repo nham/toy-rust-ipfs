@@ -1,4 +1,7 @@
 use super::Command;
+use blockstore::{self, Blockstore};
+use config;
+use core::IpfsNode;
 use util;
 
 use std::collections::HashMap;
@@ -85,13 +88,28 @@ impl Arg {
     }
 }
 
+pub type NodeConstructor = fn(PathBuf) -> Result<IpfsNode, String>;
+
 pub struct Context {
     pub repo_dir: PathBuf,
+    pub node: Option<IpfsNode>,
+    node_constructor: NodeConstructor,
 }
 
 impl Context {
-    pub fn new(path: PathBuf) -> Self {
-        Context { repo_dir: path }
+    // takes a path to the repo directory
+    pub fn new(path: PathBuf, node_constructor: NodeConstructor) -> Self {
+        Context {
+            repo_dir: path,
+            node: None,
+            node_constructor: node_constructor,
+        }
+    }
+
+    pub fn construct_node(&mut self) -> Result<(), String> {
+        let node = try!((self.node_constructor)(self.repo_dir.clone()));
+        self.node = Some(node);
+        Ok(())
     }
 }
 

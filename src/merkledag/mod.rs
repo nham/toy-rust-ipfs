@@ -1,12 +1,13 @@
 mod pb;
 
+use block::Block;
 use blockstore::Blockstore;
 use util;
 
 use protobuf::{self, Message, RepeatedField};
 use rust_multihash::Multihash;
 use std::io::{Read, Write};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 // TODO: pointer to node. How to do?
 struct Link {
@@ -19,10 +20,6 @@ struct Node {
     data: Vec<u8>,
     links: Vec<Link>,
     multihash: RwLock<Option<Multihash>>, // caches the multihash so it isn't recomputed
-}
-
-pub struct DagService {
-    blockstore: Blockstore,
 }
 
 impl Link {
@@ -94,5 +91,28 @@ impl Node {
 
         pbnode.write_to_writer(writer)
               .map_err(|e| format!("Error cloning node to writer: {}", e))
+    }
+}
+
+// TODO: wrap a Blockservice instead
+pub struct DagService {
+    blockstore: Arc<Blockstore>,
+}
+
+impl DagService {
+    pub fn new(blockstore: Arc<Blockstore>) -> Self {
+        DagService { blockstore: blockstore }
+    }
+
+    pub fn add<'a>(&self, node: &'a Node) -> Result<Multihash, String> {
+        let hash = node.multihash();
+        try!(self.blockstore.put(&hash, node.get_data()));
+        Ok(hash)
+    }
+
+    pub fn get(&self, hash: &Multihash) -> Result<Node, String> {
+        let block = try!(self.blockstore.get(hash));
+        let data = block.take_data();
+        Node::from_reader(&mut &data[..])
     }
 }

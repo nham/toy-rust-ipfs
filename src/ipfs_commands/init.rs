@@ -20,7 +20,7 @@ pub fn make_command() -> Command {
         "Overwrite existing configuration (if it exists)"
     );
 
-    fn run(req: &request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request)  -> Result<(), String> {
         let repo_dir = req.context.repo_dir.clone();
         if try!(fsrepo::is_locked(repo_dir.clone())) {
             return Err("Another process has locked the repo. Unable to continue.".to_string());

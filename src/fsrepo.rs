@@ -162,3 +162,9 @@ fn write_config_file<P: AsRef<Path>>(file_path: P, cfg: &config::Config) -> Resu
     file.write(|f| f.write_all(s.as_bytes()))
         .map_err(|e| format!("Error writing config file: {}", e))
 }
+
+pub fn read_config_file<P: AsRef<Path>>(file_path: P) -> Result<config::Config, String> {
+    let mut config_file = try!(File::open(file_path)
+                               .map_err(|e| format!("Error opening config file: {}", e)));
+    config::Config::from_reader(&mut config_file)
+}

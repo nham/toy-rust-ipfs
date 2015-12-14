@@ -15,7 +15,7 @@ pub fn make_command() -> Command {
         "The path(s) to a file to be added to IPFS"
     );
 
-    fn run(req: &request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request)  -> Result<(), String> {
         for arg in req.args() {
             println!("arg: {:?}", arg);
         }

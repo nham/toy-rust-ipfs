@@ -10,6 +10,7 @@ mod block;
 mod blockstore;
 mod commands;
 mod config;
+mod core;
 mod crypto;
 mod fsrepo;
 mod merkledag;
@@ -17,9 +18,12 @@ mod root; // TODO: where should this module reside?
 mod util;
 mod unixfs;
 
+use blockstore::Blockstore;
 use commands::request;
+use core::IpfsNode;
 
 use std::env;
+use std::path::PathBuf;
 
 struct CommandInvocation<'a> {
     pub request: request::Request<'a>,
@@ -38,8 +42,8 @@ impl<'a> CommandInvocation<'a> {
         Ok(CommandInvocation { request: req, command: cmd })
     }
 
-    fn run(&self) -> Result<(), String> {
-        self.command.run(&self.request)
+    fn run(&mut self) -> Result<(), String> {
+        self.command.run(&mut self.request)
     }
 }
 
@@ -47,11 +51,11 @@ fn main() {
     let root = make_root_command();
 
     let context = match fsrepo::best_known_path() {
-        Err(e) => panic!("{}", e),
-        Ok(path) => request::Context::new(path),
+        Err(e) => { println!("{}", e); return },
+        Ok(path) => request::Context::new(path, construct_node),
     };
 
-    let invoc = match CommandInvocation::from_parse(env::args().skip(1), &root, context) {
+    let mut invoc = match CommandInvocation::from_parse(env::args().skip(1), &root, context) {
         Err(e) => { println!("{}", e); return },
         Ok(invoc) => invoc,
     };
@@ -60,6 +64,15 @@ fn main() {
         Err(e) => println!("{}", e),
         _ => {},
     }
+}
+
+fn construct_node(repo_path: PathBuf) -> Result<IpfsNode, String> {
+    let config_path = config::repo_path_to_config_file(repo_path.clone());
+    let config = try!(fsrepo::read_config_file(&config_path));
+    let mut blockstore_path = repo_path;
+    blockstore_path.push(blockstore::BLOCKSTORE_DIR);
+    let bs = Blockstore::new(blockstore_path);
+    Ok(IpfsNode::new(bs, config))
 }
 
 fn make_root_command() -> commands::Command {
@@ -73,7 +86,7 @@ fn make_root_command() -> commands::Command {
         "Show the full command help text"
     );
 
-    fn run(req: &request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request)  -> Result<(), String> {
         println!("{}\n{}\n{}",
                  req.command.help_text.tagline,
                  req.command.help_text.short_desc,
