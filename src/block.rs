@@ -14,6 +14,13 @@ impl Block {
         }
     }
 
+    pub fn with_hash(data: Vec<u8>, multihash: Multihash) -> Self {
+        Block {
+            multihash: multihash,
+            data: data,
+        }
+    }
+
     pub fn get_multihash(&self) -> &Multihash {
         &self.multihash
     }

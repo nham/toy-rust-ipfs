@@ -4,6 +4,7 @@ use unixfs;
 
 use rust_multihash::Multihash;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 const FileHelpText: HelpText = HelpText {
     tagline:  "Interact with ipfs objects representing Unix filesystems",
@@ -66,31 +67,46 @@ fn make_ls_command() -> Command {
         try!(req.context.construct_node());
         let node = req.context.node.as_ref().unwrap();
 
-        println!("got a node");
-
         let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
 
         for path in req.string_arg("ipfs-path").unwrap() {
-            println!("path: {:?}", path);
             let mh = try!(Multihash::from_base58_str(&path));
             // retrieve merkledag node for the path (multihash, at this point)
-            let dag_node = try!(node.dagservice.get(&mh));
+            let mut dag_node = try!(node.dagservice.get(&mh));
             let unixfs_data = try!(unixfs::from_reader(&mut dag_node.get_data()));
 
             // TODO: fix links
+            let file_type = unixfs_data.get_Type();
+            let links = match file_type {
+                unixfs::pb::Data_DataType::File => vec![],
+                unixfs::pb::Data_DataType::Directory => {
+                    let links = Arc::get_mut(&mut dag_node).unwrap().get_mut_links();
+                    let mut v = Vec::with_capacity(links.len());
+                    for link in links.iter_mut() {
+                        let link_node = try!(link.get_node(&node.dagservice));
+                        link.set_node(link_node.clone());
+
+                        let link_node_data = try!(unixfs::from_reader(&mut link_node.get_data()));
+                    }
+                    v
+                },
+                _ => unimplemented!()
+            };
+
             let ls_obj = LsObject {
                 hash: mh,
                 size: unixfs_data.get_filesize(),
-                ty: unixfs_data.get_Type(),
-                links: vec![],
+                ty: file_type,
+                links: links,
             };
 
             objects.insert(dag_node.multihash(), ls_obj);
         }
 
         for (hash, obj) in &objects {
-            println!("{:?}: {:?}", hash, obj);
+            println!("{}: {:?}", hash, obj);
         }
+        Ok(())
     }
 
     Command::new(vec![], vec![arg_path], run, FileHelpText, vec![])

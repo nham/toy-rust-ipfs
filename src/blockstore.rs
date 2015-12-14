@@ -1,12 +1,12 @@
-use block;
+use block::Block;
 use util;
 
 use atomicwrites::{AtomicFile, DisallowOverwrite};
 use rust_multihash::Multihash;
 use rustc_serialize::hex::ToHex;
 use std::collections::HashMap;
-use std::fs;
-use std::io::{self, Write};
+use std::fs::{self, File};
+use std::io::{self, Write, Read};
 use std::path::{Path, PathBuf};
 
 const BLOCKFILE_EXT: &'static str = ".data";
@@ -33,8 +33,16 @@ impl Blockstore {
                                    Blockstore::has: {}", e))
     }
 
-    pub fn get(&self, hash: &Multihash) -> Result<block::Block, String> {
-        unimplemented!()
+    pub fn get(&self, hash: &Multihash) -> Result<Block, String> {
+        let mut file = try!(File::open(self.block_file(hash))
+                            .map_err(|e| format!("Error opening file for hash {:?} in \
+                                                  Blockstore::get: {}", hash, e)));
+
+        let mut data = Vec::new();
+        try!(file.read_to_end(&mut data)
+                 .map_err(|e| format!("Error reading file for hash {:?} in \
+                                       Blockstore::get: {}", hash, e)));
+        Ok(Block::with_hash(data, hash.clone()))
     }
 
     pub fn put(&self, multihash: &Multihash, data: &[u8]) -> Result<(), String> {

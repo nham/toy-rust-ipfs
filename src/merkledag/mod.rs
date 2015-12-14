@@ -9,11 +9,11 @@ use rust_multihash::Multihash;
 use std::io::{Read, Write};
 use std::sync::{Arc, RwLock};
 
-// TODO: pointer to node. How to do?
 struct Link {
     name: String,
     hash: Multihash,
     target_size: u64,
+    node: Option<Arc<Node>>,
 }
 
 struct Node {
@@ -23,11 +23,23 @@ struct Node {
 }
 
 impl Link {
+    pub fn get_node(&self, dagservice: &DagService) -> Result<Arc<Node>, String> {
+        match self.node {
+            Some(ref node) => Ok(node.clone()),
+            None => dagservice.get(&self.hash),
+        }
+    }
+
+    pub fn set_node(&mut self, node: Arc<Node>) {
+        self.node = Some(node)
+    }
+
     pub fn from_pblink(mut link: pb::PBLink) -> Self {
         Link {
             name: link.take_Name(),
             hash: util::hash(link.get_Hash()),
             target_size: link.get_Tsize(),
+            node: None,
         }
     }
 
@@ -42,6 +54,8 @@ impl Link {
 
 impl Node {
     pub fn get_data(&self) -> &[u8] { &self.data[..] }
+    pub fn get_links(&self) -> &[Link] { &self.links[..] }
+    pub fn get_mut_links(&mut self) -> &mut[Link] { &mut self.links[..] }
 
     pub fn multihash(&self) -> Multihash {
         match self.multihash.try_read() {
@@ -110,9 +124,9 @@ impl DagService {
         Ok(hash)
     }
 
-    pub fn get(&self, hash: &Multihash) -> Result<Node, String> {
+    pub fn get(&self, hash: &Multihash) -> Result<Arc<Node>, String> {
         let block = try!(self.blockstore.get(hash));
         let data = block.take_data();
-        Node::from_reader(&mut &data[..])
+        Node::from_reader(&mut &data[..]).map(|node| Arc::new(node))
     }
 }
