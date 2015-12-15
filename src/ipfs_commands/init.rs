@@ -28,7 +28,7 @@ pub fn make_command() -> Command {
 
         try!(check_and_prepare_repo_dir(repo_dir.clone()));
 
-        if fsrepo::is_initialized(repo_dir.clone()) {
+        if try!(fsrepo::is_initialized(repo_dir.clone())) {
             if req.option("f").is_some() {
                 try!(fsrepo::remove(&repo_dir));
                 try!(util::ensure_dir_writable(&repo_dir)

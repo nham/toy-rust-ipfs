@@ -84,8 +84,6 @@ fn make_ls_command() -> Command {
                     let mut v = Vec::with_capacity(links.len());
 
                     for link in links.iter_mut() {
-                        println!("link name = {}\n hash = {}", link.clone_name(), link.clone_hash());
-
                         let link_node = try!(link.get_node(&node.dagservice));
                         link.set_node(link_node.clone()); // TODO: needed?
 

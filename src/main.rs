@@ -67,6 +67,9 @@ fn main() {
 }
 
 fn construct_node(repo_path: PathBuf) -> Result<IpfsNode, String> {
+    if !try!(fsrepo::is_initialized(repo_path.clone())) {
+        return Err(format!("No ipfs repo found at {:?}. Please run `ipfs init`", repo_path))
+    }
     let config_path = config::repo_path_to_config_file(repo_path.clone());
     let config = try!(fsrepo::read_config_file(&config_path));
     let mut blockstore_path = repo_path;

@@ -102,22 +102,26 @@ fn expand_tilde(s: String) -> Result<PathBuf, ()> {
 // TODO: ensure this process can't modify the repo while this check is in progress
 // assumes that we have sufficient permission to the repo directory,
 // so doesn't worry about any permissions errors from checking existence
-pub fn is_initialized(mut repo_path: PathBuf) -> bool  {
+pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String>  {
     let config_path = config::repo_path_to_config_file(repo_path.clone());
-    // unwrap is "safe" here because the function assumes that there are no
-    // permissions errors, so file_exists() should not return an error
-    if !util::file_exists_expect(config_path) {
-        return false;
+    let config_exists = try!(util::file_exists(&config_path)
+                             .map_err(|e| format!("Error checking existence of config \
+                                                   file {:?}: {}", config_path, e)));
+    if !config_exists {
+        return Ok(false);
     }
 
     // TODO: why does the analogous function in go-ipfs only check the
     // datastore directory? what about blocks and log directories
     repo_path.push(DATASTORE_DIR);
-    if !util::file_exists_expect(repo_path) {
-        return false;
+    let ds_exists = try!(util::file_exists(&config_path)
+                         .map_err(|e| format!("Error checking existence of datastore \
+                                               directory {:?}: {}", repo_path, e)));
+    if !ds_exists {
+        return Ok(false);
     }
 
-    true
+    Ok(true)
 }
 
 pub fn remove<P: AsRef<Path>>(repo_path: P) -> Result<(), String> {
@@ -126,7 +130,7 @@ pub fn remove<P: AsRef<Path>>(repo_path: P) -> Result<(), String> {
 
 pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> {
     // Don't initialize if already initialized.
-    if is_initialized(repo_path.clone()) {
+    if try!(is_initialized(repo_path.clone())) {
         return Ok(());
     }
 
