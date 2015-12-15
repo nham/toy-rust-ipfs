@@ -23,6 +23,11 @@ struct Node {
 }
 
 impl Link {
+    pub fn get_name(&self) -> &str { &self.name }
+    pub fn clone_name(&self) -> String { self.name.clone() }
+    pub fn clone_hash(&self) -> Multihash { self.hash.clone() }
+    pub fn get_target_size(&self) -> u64 { self.target_size }
+
     pub fn get_node(&self, dagservice: &DagService) -> Result<Arc<Node>, String> {
         match self.node {
             Some(ref node) => Ok(node.clone()),
@@ -37,7 +42,7 @@ impl Link {
     pub fn from_pblink(mut link: pb::PBLink) -> Self {
         Link {
             name: link.take_Name(),
-            hash: util::hash(link.get_Hash()),
+            hash: Multihash::from_vec(link.take_Hash()),
             target_size: link.get_Tsize(),
             node: None,
         }

@@ -39,7 +39,7 @@ pub fn make_command() -> Command {
 
 #[derive(Debug)]
 struct LsLink {
-    name: String,
+    pub name: String,
     hash: Multihash,
     size: u64,
     ty: unixfs::pb::Data_DataType,
@@ -50,7 +50,7 @@ struct LsObject {
     hash: Multihash,
     size: u64,
     ty: unixfs::pb::Data_DataType,
-    links: Vec<LsLink>,
+    pub links: Vec<LsLink>,
 }
 
 fn make_ls_command() -> Command {
@@ -75,19 +75,37 @@ fn make_ls_command() -> Command {
             let mut dag_node = try!(node.dagservice.get(&mh));
             let unixfs_data = try!(unixfs::from_reader(&mut dag_node.get_data()));
 
-            // TODO: fix links
             let file_type = unixfs_data.get_Type();
+
             let links = match file_type {
                 unixfs::pb::Data_DataType::File => vec![],
                 unixfs::pb::Data_DataType::Directory => {
                     let links = Arc::get_mut(&mut dag_node).unwrap().get_mut_links();
                     let mut v = Vec::with_capacity(links.len());
+
                     for link in links.iter_mut() {
+                        println!("link name = {}\n hash = {}", link.clone_name(), link.clone_hash());
+
                         let link_node = try!(link.get_node(&node.dagservice));
-                        link.set_node(link_node.clone());
+                        link.set_node(link_node.clone()); // TODO: needed?
 
                         let link_node_data = try!(unixfs::from_reader(&mut link_node.get_data()));
+
+                        let ty = link_node_data.get_Type();
+
+                        let size = match ty {
+                            unixfs::pb::Data_DataType::File => link_node_data.get_filesize(),
+                            _ => link.get_target_size(),
+                        };
+
+                        v.push(LsLink {
+                            name: link.clone_name(),
+                            hash: link.clone_hash(),
+                            size: size,
+                            ty: ty,
+                        });
                     }
+
                     v
                 },
                 _ => unimplemented!()
@@ -104,7 +122,11 @@ fn make_ls_command() -> Command {
         }
 
         for (hash, obj) in &objects {
-            println!("{}: {:?}", hash, obj);
+            println!("{}:", hash);
+            for link in obj.links.iter() {
+                println!("{}", link.name);
+            }
+            println!("");
         }
         Ok(())
     }

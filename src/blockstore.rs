@@ -35,7 +35,7 @@ impl Blockstore {
 
     pub fn get(&self, hash: &Multihash) -> Result<Block, String> {
         let mut file = try!(File::open(self.block_file(hash))
-                            .map_err(|e| format!("Error opening file for hash {:?} in \
+                            .map_err(|e| format!("Error opening file for hash {} in \
                                                   Blockstore::get: {}", hash, e)));
 
         let mut data = Vec::new();
