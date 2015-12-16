@@ -118,7 +118,7 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
                     args.push((curr_cmd_arg.name(),
                                try!(parse_arg_tokens(curr_cmd_arg, args_one))));
                     args_one = Vec::new();
-                    cmd_arg_num.map(|n| n + 1);
+                    cmd_arg_num = cmd_arg_num.map(|n| n + 1);
                 }
             }
         }

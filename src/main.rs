@@ -105,5 +105,6 @@ fn make_root_command() -> commands::Command {
                             ("init", ipfs_commands::init::make_command()),
                             ("add", ipfs_commands::add::make_command()),
                             ("file", ipfs_commands::file::make_command()),
+                            ("object", ipfs_commands::object::make_command()),
                            ])
 }
