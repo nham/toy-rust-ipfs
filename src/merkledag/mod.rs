@@ -19,16 +19,26 @@ struct Link {
 struct Node {
     data: Vec<u8>,
     links: Vec<Link>,
-    multihash: RwLock<Option<Multihash>>, // caches the multihash so it isn't recomputed
+    multihash: RwLock<Option<Multihash>>, /* caches the multihash so it isn't recomputed */
 }
 
 impl Link {
-    pub fn get_name(&self) -> &str { &self.name }
-    pub fn clone_name(&self) -> String { self.name.clone() }
-    pub fn clone_hash(&self) -> Multihash { self.hash.clone() }
-    pub fn get_target_size(&self) -> u64 { self.target_size }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn clone_name(&self) -> String {
+        self.name.clone()
+    }
+    pub fn clone_hash(&self) -> Multihash {
+        self.hash.clone()
+    }
+    pub fn get_target_size(&self) -> u64 {
+        self.target_size
+    }
 
-    pub fn get_node(&self, dagservice: &DagService) -> Result<Arc<Node>, String> {
+    pub fn get_node(&self,
+                    dagservice: &DagService)
+                    -> Result<Arc<Node>, String> {
         match self.node {
             Some(ref node) => Ok(node.clone()),
             None => dagservice.get(&self.hash),
@@ -58,9 +68,15 @@ impl Link {
 }
 
 impl Node {
-    pub fn get_data(&self) -> &[u8] { &self.data[..] }
-    pub fn get_links(&self) -> &[Link] { &self.links[..] }
-    pub fn get_mut_links(&mut self) -> &mut[Link] { &mut self.links[..] }
+    pub fn get_data(&self) -> &[u8] {
+        &self.data[..]
+    }
+    pub fn get_links(&self) -> &[Link] {
+        &self.links[..]
+    }
+    pub fn get_mut_links(&mut self) -> &mut [Link] {
+        &mut self.links[..]
+    }
 
     pub fn multihash(&self) -> Multihash {
         match self.multihash.try_read() {
@@ -73,7 +89,7 @@ impl Node {
                     *cache_lock.unwrap() = Some(mh.clone());
                 }
                 mh
-            },
+            }
         }
     }
 
@@ -84,8 +100,11 @@ impl Node {
     }
 
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, String> {
-        let mut pbnode = try!(protobuf::parse_from_reader::<pb::PBNode>(reader)
-                              .map_err(|e| format!("Error parsing encoded Node: {}", e)));
+        let mut pbnode =
+            try!(protobuf::parse_from_reader::<pb::PBNode>(reader)
+                     .map_err(|e| {
+                         format!("Error parsing encoded Node: {}", e)
+                     }));
 
         let mut links = Vec::new();
 
@@ -100,12 +119,17 @@ impl Node {
         })
     }
 
-    pub fn encode_to_writer<W: Write>(&self, writer: &mut W) -> Result<(), String> {
+    pub fn encode_to_writer<W: Write>(&self,
+                                      writer: &mut W)
+                                      -> Result<(), String> {
         let mut pbnode = pb::PBNode::new();
         pbnode.set_Data(self.data.clone());
 
         // TODO: go-ipfs sorts the links by name before hashing
-        let pblinks = self.links.iter().map(|link| link.clone_to_pblink()).collect();
+        let pblinks = self.links
+                          .iter()
+                          .map(|link| link.clone_to_pblink())
+                          .collect();
         pbnode.set_Links(RepeatedField::from_vec(pblinks));
 
         pbnode.write_to_writer(writer)

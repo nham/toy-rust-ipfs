@@ -4,28 +4,28 @@ pub mod cli;
 pub mod request;
 
 pub struct HelpText {
-    pub tagline:     &'static str, // used in <cmd usage>
-    pub short_desc:  &'static str, // used in DESCRIPTION
-    pub synopsis:    &'static str, // showcasing the cmd
+    pub tagline: &'static str, // used in <cmd usage>
+    pub short_desc: &'static str, // used in DESCRIPTION
+    pub synopsis: &'static str, // showcasing the cmd
     /*
-	pub usage:       Option<&'static str>, // overrides USAGE section
-	pub long_desc:   Option<&'static str>, // overrides DESCRIPTION section
-	pub options:     Option<&'static str>, // overrides OPTIONS section
-	pub arguments:   Option<&'static str>, // overrides ARGUMENTS section
-	pub subcommands: Option<&'static str> // overrides SUBCOMMANDS section
-    */
+     * pub usage:       Option<&'static str>, // overrides USAGE section
+     * pub long_desc:   Option<&'static str>, // overrides DESCRIPTION section
+     * pub options:     Option<&'static str>, // overrides OPTIONS section
+     * pub arguments:   Option<&'static str>, // overrides ARGUMENTS section
+     * pub subcommands: Option<&'static str> // overrides SUBCOMMANDS section
+     * */
 }
 
 pub type RunFn = fn(&mut request::Request) -> Result<(), String>;
 
 pub struct Command {
-	options:    Vec<Opt>,
-	arguments:  Vec<Argument>,
-	pre_run:    (),
-	run:        RunFn,
-	post_run:   (),
-	pub help_text:   HelpText,
-	subcommands: HashMap<&'static str, Command>,
+    options: Vec<Opt>,
+    arguments: Vec<Argument>,
+    pre_run: (),
+    run: RunFn,
+    post_run: (),
+    pub help_text: HelpText,
+    subcommands: HashMap<&'static str, Command>,
 }
 
 impl Command {
@@ -35,8 +35,7 @@ impl Command {
                run: RunFn,
                help_text: HelpText,
                subcommands: Vec<(&'static str, Command)>)
-               -> Self
-    {
+               -> Self {
         Command {
             options: options,
             arguments: arguments,
@@ -107,18 +106,23 @@ impl Opt {
         Self::new(names, OptType::Bool, desc)
     }
 
-    fn new(mut names: Vec<OptName>, opt_type: OptType, desc: &'static str) -> Self {
+    fn new(mut names: Vec<OptName>,
+           opt_type: OptType,
+           desc: &'static str)
+           -> Self {
         let canonical = names[0];
         names.sort_by(|a, b| a.len().cmp(&b.len()));
         Opt {
             name: canonical,
             names: names,
             opt_type: opt_type,
-            description: desc
+            description: desc,
         }
     }
 
-    pub fn name(&self) -> OptName { self.name }
+    pub fn name(&self) -> OptName {
+        self.name
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -138,18 +142,28 @@ pub struct Argument {
 }
 
 impl Argument {
-    pub fn new_file(name: ArgName, required: bool, variadic: bool,
-                desc: &'static str) -> Self {
+    pub fn new_file(name: ArgName,
+                    required: bool,
+                    variadic: bool,
+                    desc: &'static str)
+                    -> Self {
         Self::new(name, ArgumentType::File, required, variadic, desc)
     }
 
-    pub fn new_string(name: ArgName, required: bool, variadic: bool,
-                desc: &'static str) -> Self {
+    pub fn new_string(name: ArgName,
+                      required: bool,
+                      variadic: bool,
+                      desc: &'static str)
+                      -> Self {
         Self::new(name, ArgumentType::String, required, variadic, desc)
     }
 
-    fn new(name: ArgName, ty: ArgumentType, required: bool, variadic: bool,
-           desc: &'static str) -> Self {
+    fn new(name: ArgName,
+           ty: ArgumentType,
+           required: bool,
+           variadic: bool,
+           desc: &'static str)
+           -> Self {
         Argument {
             name: name,
             ty: ty,
@@ -163,7 +177,11 @@ impl Argument {
         self.variadic
     }
 
-    pub fn name(&self) -> ArgName { self.name }
+    pub fn name(&self) -> ArgName {
+        self.name
+    }
 
-    pub fn arg_type(&self) -> ArgumentType { self.ty }
+    pub fn arg_type(&self) -> ArgumentType {
+        self.ty
+    }
 }

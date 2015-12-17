@@ -17,7 +17,9 @@ pub enum Opt {
 }
 
 impl Opt {
-    pub fn parse_string(s: String, opt_type: super::OptType) -> Result<Self, String> {
+    pub fn parse_string(s: String,
+                        opt_type: super::OptType)
+                        -> Result<Self, String> {
         match opt_type {
             super::OptType::String => Ok(Opt::String(s)),
             super::OptType::Bool => {
@@ -26,7 +28,8 @@ impl Opt {
                 } else if s == "false" {
                     Ok(Opt::Bool(false))
                 } else {
-                    Err("Expected boolean value for boolean option.".to_string())
+                    Err("Expected boolean value for boolean option."
+                            .to_string())
                 }
             }
             super::OptType::Int => {
@@ -40,16 +43,20 @@ impl Opt {
 
 #[derive(Debug)]
 pub struct FileArg {
-    path: PathBuf
+    path: PathBuf,
 }
 
 impl FileArg {
     pub fn new(s: String) -> Result<Self, String> {
         let path = PathBuf::from(s);
         match util::file_exists(&path) {
-            Ok(true) => {},
+            Ok(true) => {}
             Ok(false) => return Err(format!("File {:?} does not exist", path)),
-            Err(e) => return Err(format!("Error checking existence of file {:?}: {}", path, e)),
+            Err(e) => {
+                return Err(format!("Error checking existence of file {:?}: {}",
+                                   path,
+                                   e))
+            }
         }
 
         Ok(FileArg { path: path })
@@ -74,7 +81,9 @@ impl Arg {
     // Panics if the Arg is not a string argument
     fn get_string(&self) -> &[String] {
         match *self {
-            Arg::Files(_) => panic!("Could not get_strings, Arg is a file argument"),
+            Arg::Files(_) => {
+                panic!("Could not get_strings, Arg is a file argument")
+            }
             Arg::Strings(ref v) => &v[..],
         }
     }
@@ -82,7 +91,9 @@ impl Arg {
     // Panics if the Arg is not a file argument
     fn get_file(&self) -> &[FileArg] {
         match *self {
-            Arg::Strings(_) => panic!("Could not get_files, Arg is a string argument"),
+            Arg::Strings(_) => {
+                panic!("Could not get_files, Arg is a string argument")
+            }
             Arg::Files(ref v) => &v[..],
         }
     }
@@ -125,7 +136,8 @@ impl<'a> Request<'a> {
     pub fn new(cmd: &'a Command,
                args: Vec<(super::ArgName, Arg)>,
                opts: Vec<(super::OptName, Opt)>,
-               context: Context) -> Self {
+               context: Context)
+               -> Self {
         Request {
             command: cmd,
             arguments: args.into_iter().collect(),

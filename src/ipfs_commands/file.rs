@@ -7,13 +7,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 const FileHelpText: HelpText = HelpText {
-    tagline:  "Interact with ipfs objects representing Unix filesystems",
+    tagline: "Interact with ipfs objects representing Unix filesystems",
     synopsis: "",
     short_desc: r#"
 'ipfs file' provides a familar interface to filesystems represented
 by IPFS objects that hides IPFS-implementation details like layout
 objects (e.g. fanout and chunking).
-"#
+"#,
 };
 
 const LsHelpText: HelpText = HelpText {
@@ -26,15 +26,19 @@ contents.
 The JSON output contains size information.  For files, the child size
 is the total size of the file contents.  For directories, the child
 size is the IPFS link size.
-"#
+"#,
 };
 
 pub fn make_command() -> Command {
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         unimplemented!()
     }
 
-    Command::new(vec![], vec![], run, FileHelpText, vec![("ls", make_ls_command())])
+    Command::new(vec![],
+                 vec![],
+                 run,
+                 FileHelpText,
+                 vec![("ls", make_ls_command())])
 }
 
 #[derive(Debug)]
@@ -54,16 +58,15 @@ struct LsObject {
 }
 
 fn make_ls_command() -> Command {
-    let arg_path = Argument::new_string(
-        "ipfs-path",
-        true,
-        true,
-        "The path(s) to the IPFS object(s) to list links from"
-    );
+    let arg_path = Argument::new_string("ipfs-path",
+                                        true,
+                                        true,
+                                        "The path(s) to the IPFS object(s) \
+                                         to list links from");
 
     // TODO: this is only going to accept hashes for now. Need to implement
     // path resolver so it can do paths.
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         try!(req.context.construct_node());
         let node = req.context.node.as_ref().unwrap();
 
@@ -73,14 +76,17 @@ fn make_ls_command() -> Command {
             let mh = try!(Multihash::from_base58_str(&path));
             // retrieve merkledag node for the path (multihash, at this point)
             let mut dag_node = try!(node.dagservice.get(&mh));
-            let unixfs_data = try!(unixfs::from_reader(&mut dag_node.get_data()));
+            let unixfs_data =
+                try!(unixfs::from_reader(&mut dag_node.get_data()));
 
             let file_type = unixfs_data.get_Type();
 
             let links = match file_type {
                 unixfs::pb::Data_DataType::File => vec![],
                 unixfs::pb::Data_DataType::Directory => {
-                    let links = Arc::get_mut(&mut dag_node).unwrap().get_mut_links();
+                    let links = Arc::get_mut(&mut dag_node)
+                                    .unwrap()
+                                    .get_mut_links();
                     let mut v = Vec::with_capacity(links.len());
 
                     for link in links.iter_mut() {
@@ -92,7 +98,9 @@ fn make_ls_command() -> Command {
                         let ty = link_node_data.get_Type();
 
                         let size = match ty {
-                            unixfs::pb::Data_DataType::File => link_node_data.get_filesize(),
+                            unixfs::pb::Data_DataType::File => {
+                                link_node_data.get_filesize()
+                            }
                             _ => link.get_target_size(),
                         };
 
@@ -105,8 +113,8 @@ fn make_ls_command() -> Command {
                     }
 
                     v
-                },
-                _ => unimplemented!()
+                }
+                _ => unimplemented!(),
             };
 
             let ls_obj = LsObject {

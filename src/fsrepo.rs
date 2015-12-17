@@ -21,16 +21,17 @@ pub fn is_locked(mut repo_path: PathBuf) -> Result<bool, String> {
 
     match util::file_exists(&repo_path) {
         Ok(false) => return Ok(false),
-        _ => {},
+        _ => {}
     }
 
     match lock(&repo_path) {
-        Err(e) =>
+        Err(e) => {
             match e.kind() {
                 // TODO: is WouldBlock correct here?
                 io::ErrorKind::WouldBlock => Ok(true),
                 _ => Err(format!("{}", e)),
-            },
+            }
+        }
         Ok(_) => Ok(false),
     }
 }
@@ -65,7 +66,11 @@ fn fcntl(file: &File, cmd: libc::c_int) -> Result<(), io::Error> {
     println!("{:?}", flock);
 
     let ret = unsafe { libc::fcntl(file.as_raw_fd(), cmd, &flock) };
-    if ret < 0 { Err(io::Error::last_os_error()) } else { Ok(()) }
+    if ret < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 // Use the environment variable to determine repo path if it exists,
@@ -75,13 +80,13 @@ pub fn best_known_path() -> Result<PathBuf, String> {
     // complicates things
     let unexpanded_path = match env::var(config::ENV_NAME_REPO_DIR) {
         Err(_) => {
-            config::DEFAULT_REPO_ROOT.to_string()
-            + config::DEFAULT_REPO_PATH
+            config::DEFAULT_REPO_ROOT.to_string() + config::DEFAULT_REPO_PATH
         }
         Ok(s) => s,
     };
 
-    expand_tilde(unexpanded_path).map_err(|e| format!("Could not expand repo path"))
+    expand_tilde(unexpanded_path)
+        .map_err(|e| format!("Could not expand repo path"))
 }
 
 fn expand_tilde(s: String) -> Result<PathBuf, ()> {
@@ -102,11 +107,13 @@ fn expand_tilde(s: String) -> Result<PathBuf, ()> {
 // TODO: ensure this process can't modify the repo while this check is in progress
 // assumes that we have sufficient permission to the repo directory,
 // so doesn't worry about any permissions errors from checking existence
-pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String>  {
+pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String> {
     let config_path = config::repo_path_to_config_file(repo_path.clone());
-    let config_exists = try!(util::file_exists(&config_path)
-                             .map_err(|e| format!("Error checking existence of config \
-                                                   file {:?}: {}", config_path, e)));
+    let config_exists = try!(util::file_exists(&config_path).map_err(|e| {
+        format!("Error checking existence of config file {:?}: {}",
+                config_path,
+                e)
+    }));
     if !config_exists {
         return Ok(false);
     }
@@ -114,9 +121,11 @@ pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String>  {
     // TODO: why does the analogous function in go-ipfs only check the
     // datastore directory? what about blocks and log directories
     repo_path.push(DATASTORE_DIR);
-    let ds_exists = try!(util::file_exists(&config_path)
-                         .map_err(|e| format!("Error checking existence of datastore \
-                                               directory {:?}: {}", repo_path, e)));
+    let ds_exists = try!(util::file_exists(&config_path).map_err(|e| {
+        format!("Error checking existence of datastore directory {:?}: {}",
+                repo_path,
+                e)
+    }));
     if !ds_exists {
         return Ok(false);
     }
@@ -125,10 +134,13 @@ pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String>  {
 }
 
 pub fn remove<P: AsRef<Path>>(repo_path: P) -> Result<(), String> {
-    fs::remove_dir_all(repo_path).map_err(|e| format!("Error removing repo: {}", e))
+    fs::remove_dir_all(repo_path)
+        .map_err(|e| format!("Error removing repo: {}", e))
 }
 
-pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> {
+pub fn init(mut repo_path: PathBuf,
+            cfg: &config::Config)
+            -> Result<(), String> {
     // Don't initialize if already initialized.
     if try!(is_initialized(repo_path.clone())) {
         return Ok(());
@@ -139,24 +151,29 @@ pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> 
 
     let mut datastore_path = repo_path.clone();
     datastore_path.push(DATASTORE_DIR);
-    try!(util::ensure_dir_writable(datastore_path)
-            .map_err(|e| format!("Error checking writability of datastore dir: {}", e)));
+    try!(util::ensure_dir_writable(datastore_path).map_err(|e| {
+        format!("Error checking writability of datastore dir: {}", e)
+    }));
 
     let mut blockstore_path = repo_path.clone();
     blockstore_path.push(BLOCKSTORE_DIR);
-    try!(util::ensure_dir_writable(blockstore_path)
-            .map_err(|e| format!("Error checking writability of blockstore dir: {}", e)));
+    try!(util::ensure_dir_writable(blockstore_path).map_err(|e| {
+        format!("Error checking writability of blockstore dir: {}", e)
+    }));
 
     let mut logs_path = repo_path.clone();
     logs_path.push(LOGS_DIR);
-    try!(util::ensure_dir_writable(logs_path)
-            .map_err(|e| format!("Error checking writability of logs dir: {}", e)));
+    try!(util::ensure_dir_writable(logs_path).map_err(|e| {
+        format!("Error checking writability of logs dir: {}", e)
+    }));
 
     Ok(())
 }
 
 // Caller should ensure the directory exists before calling
-fn write_config_file<P: AsRef<Path>>(file_path: P, cfg: &config::Config) -> Result<(), String> {
+fn write_config_file<P: AsRef<Path>>(file_path: P,
+                                     cfg: &config::Config)
+                                     -> Result<(), String> {
     let s = match cfg.to_json_string() {
         Err(e) => return Err(format!("Error encoding config as Json: {}", e)),
         Ok(s) => s,
@@ -167,8 +184,10 @@ fn write_config_file<P: AsRef<Path>>(file_path: P, cfg: &config::Config) -> Resu
         .map_err(|e| format!("Error writing config file: {}", e))
 }
 
-pub fn read_config_file<P: AsRef<Path>>(file_path: P) -> Result<config::Config, String> {
-    let mut config_file = try!(File::open(file_path)
-                               .map_err(|e| format!("Error opening config file: {}", e)));
+pub fn read_config_file<P: AsRef<Path>>(file_path: P)
+                                        -> Result<config::Config, String> {
+    let mut config_file = try!(File::open(file_path).map_err(|e| {
+        format!("Error opening config file: {}", e)
+    }));
     config::Config::from_reader(&mut config_file)
 }

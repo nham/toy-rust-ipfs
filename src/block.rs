@@ -29,7 +29,9 @@ impl Block {
         &self.data[..]
     }
 
-    pub fn take_data(self) -> Vec<u8> { self.data }
+    pub fn take_data(self) -> Vec<u8> {
+        self.data
+    }
 
     pub fn clone_multihash(&self) -> Multihash {
         self.multihash.clone()

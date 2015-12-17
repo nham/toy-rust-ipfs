@@ -2,20 +2,19 @@ use commands::{HelpText, Command, Argument};
 use commands::request;
 
 const AddHelpText: HelpText = HelpText {
-    tagline:  "Add an object to ipfs.",
+    tagline: "Add an object to ipfs.",
     synopsis: "",
     short_desc: "Adds contents of <path> to ipfs.",
 };
 
 pub fn make_command() -> Command {
-    let arg_path = Argument::new_file(
-        "path",
-        true,
-        true,
-        "The path(s) to a file to be added to IPFS"
-    );
+    let arg_path = Argument::new_file("path",
+                                      true,
+                                      true,
+                                      "The path(s) to a file to be added to \
+                                       IPFS");
 
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         for arg in req.args() {
             println!("arg: {:?}", arg);
         }

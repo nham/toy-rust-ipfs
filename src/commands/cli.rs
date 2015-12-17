@@ -4,11 +4,13 @@ use super::request::{self, Request};
 use std::collections::HashMap;
 
 pub type ParseError = String;
-pub type ParseResult<'a> = (&'a Command, Vec<(super::ArgName, request::Arg)>, Vec<(super::OptName, request::Opt)>);
+pub type ParseResult<'a> = (&'a Command,
+                            Vec<(super::ArgName, request::Arg)>,
+                            Vec<(super::OptName, request::Opt)>);
 // TODO: support command arguments
 // TODO: support setting option arguments with equal sign (--opt=value)
 pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
-    where I : Iterator<Item=String>
+    where I: Iterator<Item = String>
 {
     // As the command-line request is parsed, current_cmd stores the last
     // component of the command path. I.e. if we've parsed
@@ -56,25 +58,35 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
                 };
 
                 match cmd_opts.get(opt_name) {
-                    None => return Err(format!("Option not recognized: {}", opt_name)),
+                    None => {
+                        return Err(format!("Option not recognized: {}",
+                                           opt_name))
+                    }
                     Some(opt) => opt,
                 }
             };
 
             match cmd_opt.opt_type {
-                OptType::Bool => opts.push((cmd_opt.name(), request::Opt::Bool(true))),
+                OptType::Bool => {
+                    opts.push((cmd_opt.name(), request::Opt::Bool(true)))
+                }
                 _ => {
                     // just assume the option argument is the next token.
                     // eventually this will check if theres an equal sign
                     // and split the token based on that
                     token = match input.next() {
-                        None => return Err(format!("Expecting option argument for option \
-                                                    {}, but no more tokens.", cmd_opt.name())),
+                        None => {
+                            return Err(format!("Expecting option argument \
+                                                for option {}, but no more \
+                                                tokens.",
+                                               cmd_opt.name()))
+                        }
                         Some(s) => s,
                     };
 
-                    let req_opt = try!(request::Opt::parse_string(token,
-                                                                  cmd_opt.opt_type));
+                    let req_opt =
+                        try!(request::Opt::parse_string(token,
+                                                        cmd_opt.opt_type));
                     opts.push((cmd_opt.name(), req_opt));
                 }
             }
@@ -87,7 +99,9 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             let num_args = current_cmd.arguments.len();
             if num_args == 0 {
                 let subcmd = match current_cmd.subcommand(&token) {
-                    None => return Err(format!("Subcommand {} not found", &token)),
+                    None => {
+                        return Err(format!("Subcommand {} not found", &token))
+                    }
                     Some(cmd) => cmd,
                 };
 
@@ -142,11 +156,11 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
     Ok((current_cmd, args, opts))
 }
 
-fn parse_arg_tokens(cmd_arg: &super::Argument, args: Vec<String>) -> Result<request::Arg, String> {
+fn parse_arg_tokens(cmd_arg: &super::Argument,
+                    args: Vec<String>)
+                    -> Result<request::Arg, String> {
     match cmd_arg.arg_type() {
-        super::ArgumentType::String => {
-            Ok(request::Arg::new_string_arg(args))
-        },
+        super::ArgumentType::String => Ok(request::Arg::new_string_arg(args)),
 
         super::ArgumentType::File => {
             let mut file_args = Vec::new();
@@ -155,6 +169,6 @@ fn parse_arg_tokens(cmd_arg: &super::Argument, args: Vec<String>) -> Result<requ
                 file_args.push(file_arg);
             }
             Ok(request::Arg::new_file_arg(file_args))
-        },
+        }
     }
 }

@@ -30,7 +30,7 @@ pub struct Config {
 impl Config {
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Config, String> {
         let json = try!(Json::from_reader(reader)
-                        .map_err(|e| format!("Error parsing Json: {}", e)));
+                            .map_err(|e| format!("Error parsing Json: {}", e)));
         let mut decoder = json::Decoder::new(json);
         Decodable::decode(&mut decoder)
             .map_err(|e| format!("Error decoding Config from reader: {}", e))
@@ -55,6 +55,6 @@ pub fn init(num_key_pair_bits: usize) -> Config {
         identity: Identity {
             peer_id: util::hash(&pub_bytes[..]),
             private_key: priv_b64_string,
-        }
+        },
     }
 }

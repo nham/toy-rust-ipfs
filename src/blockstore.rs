@@ -24,36 +24,51 @@ impl Blockstore {
     // <blockstore dir>/<hex encoding of [x1 ... xk]/
     // where k = prefix_len
     pub fn new(path: PathBuf) -> Self {
-        Blockstore { path: path, hex_prefix_length: 2*BLOCKSTORE_PREFIX_LENGTH }
+        Blockstore {
+            path: path,
+            hex_prefix_length: 2 * BLOCKSTORE_PREFIX_LENGTH,
+        }
     }
 
     pub fn has(&self, multihash: &Multihash) -> Result<bool, String> {
-        util::file_exists(self.block_file(multihash))
-             .map_err(|e| format!("Error checking for existence of file in \
-                                   Blockstore::has: {}", e))
+        util::file_exists(self.block_file(multihash)).map_err(|e| {
+            format!("Error checking for existence of file in Blockstore::has: \
+                     {}",
+                    e)
+        })
     }
 
     pub fn get(&self, hash: &Multihash) -> Result<Block, String> {
-        let mut file = try!(File::open(self.block_file(hash))
-                            .map_err(|e| format!("Error opening file for hash {} in \
-                                                  Blockstore::get: {}", hash, e)));
+        let mut file = try!(File::open(self.block_file(hash)).map_err(|e| {
+            format!("Error opening file for hash {} in Blockstore::get: {}",
+                    hash,
+                    e)
+        }));
 
         let mut data = Vec::new();
         try!(file.read_to_end(&mut data)
-                 .map_err(|e| format!("Error reading file for hash {:?} in \
-                                       Blockstore::get: {}", hash, e)));
+                 .map_err(|e| {
+                     format!("Error reading file for hash {:?} in \
+                              Blockstore::get: {}",
+                             hash,
+                             e)
+                 }));
         Ok(Block::with_hash(data, hash.clone()))
     }
 
-    pub fn put(&self, multihash: &Multihash, data: &[u8]) -> Result<(), String> {
+    pub fn put(&self,
+               multihash: &Multihash,
+               data: &[u8])
+               -> Result<(), String> {
         match self.has(multihash) {
             Ok(true) => return Ok(()),
-            _ => {},
+            _ => {}
         }
 
         let (mut dir, filename) = self.block_dir_and_file(multihash);
-        try!(make_prefix_dir(&dir)
-             .map_err(|e| format!("Error making prefix directory for put: {}", e)));
+        try!(make_prefix_dir(&dir).map_err(|e| {
+            format!("Error making prefix directory for put: {}", e)
+        }));
 
 
         dir.push(filename);

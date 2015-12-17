@@ -4,12 +4,12 @@ use commands::request;
 use rust_multihash::Multihash;
 
 const ObjectHelpText: HelpText = HelpText {
-    tagline:  "Interact with ipfs objects",
+    tagline: "Interact with ipfs objects",
     synopsis: "",
     short_desc: r#"
 'ipfs object' is a plumbing command used to manipulate DAG objects
 directly.
-"#
+"#,
 };
 
 const GetHelpText: HelpText = HelpText {
@@ -19,15 +19,19 @@ const GetHelpText: HelpText = HelpText {
 'ipfs object get' is a plumbing command for retreiving DAG nodes.
 It serializes the DAG node to JSON. It outputs to stdout, and <key>
 is a base58 encoded multihash.
-"#
+"#,
 };
 
 pub fn make_command() -> Command {
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         unimplemented!()
     }
 
-    Command::new(vec![], vec![], run, ObjectHelpText, vec![("get", make_get_command())])
+    Command::new(vec![],
+                 vec![],
+                 run,
+                 ObjectHelpText,
+                 vec![("get", make_get_command())])
 }
 
 #[derive(Debug)]
@@ -40,7 +44,7 @@ struct Link {
 #[derive(Debug)]
 struct Node<'a> {
     links: Vec<Link>,
-    data: &'a[u8],
+    data: &'a [u8],
 }
 
 fn make_get_command() -> Command {
@@ -51,7 +55,7 @@ fn make_get_command() -> Command {
         "Key of the object to retrieve (in base58-encoded multihash format)"
     );
 
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         try!(req.context.construct_node());
         let node = req.context.node.as_ref().unwrap();
 

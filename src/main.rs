@@ -33,13 +33,18 @@ struct CommandInvocation<'a> {
 type ParseError = String;
 
 impl<'a> CommandInvocation<'a> {
-    fn from_parse<I>(args: I, root: &'a commands::Command, context: request::Context)
-                -> Result<CommandInvocation<'a>, ParseError>
-        where I : Iterator<Item=String>
+    fn from_parse<I>(args: I,
+                     root: &'a commands::Command,
+                     context: request::Context)
+                     -> Result<CommandInvocation<'a>, ParseError>
+        where I: Iterator<Item = String>
     {
         let (cmd, args, opts) = try!(commands::cli::parse(args, root));
         let req = request::Request::new(cmd, args, opts, context);
-        Ok(CommandInvocation { request: req, command: cmd })
+        Ok(CommandInvocation {
+            request: req,
+            command: cmd,
+        })
     }
 
     fn run(&mut self) -> Result<(), String> {
@@ -51,24 +56,34 @@ fn main() {
     let root = make_root_command();
 
     let context = match fsrepo::best_known_path() {
-        Err(e) => { println!("{}", e); return },
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
         Ok(path) => request::Context::new(path, construct_node),
     };
 
-    let mut invoc = match CommandInvocation::from_parse(env::args().skip(1), &root, context) {
-        Err(e) => { println!("{}", e); return },
+    let mut invoc = match CommandInvocation::from_parse(env::args().skip(1),
+                                                        &root,
+                                                        context) {
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
         Ok(invoc) => invoc,
     };
 
     match invoc.run() {
         Err(e) => println!("{}", e),
-        _ => {},
+        _ => {}
     }
 }
 
 fn construct_node(repo_path: PathBuf) -> Result<IpfsNode, String> {
     if !try!(fsrepo::is_initialized(repo_path.clone())) {
-        return Err(format!("No ipfs repo found at {:?}. Please run `ipfs init`", repo_path))
+        return Err(format!("No ipfs repo found at {:?}. Please run `ipfs \
+                            init`",
+                           repo_path));
     }
     let config_path = config::repo_path_to_config_file(repo_path.clone());
     let config = try!(fsrepo::read_config_file(&config_path));
@@ -89,7 +104,7 @@ fn make_root_command() -> commands::Command {
         "Show the full command help text"
     );
 
-    fn run(req: &mut request::Request)  -> Result<(), String> {
+    fn run(req: &mut request::Request) -> Result<(), String> {
         println!("{}\n{}\n{}",
                  req.command.help_text.tagline,
                  req.command.help_text.short_desc,
