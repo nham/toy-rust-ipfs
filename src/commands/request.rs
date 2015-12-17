@@ -101,42 +101,43 @@ impl Arg {
 
 pub type NodeConstructor = fn(PathBuf) -> Result<IpfsNode, String>;
 
-pub struct Context {
+pub struct Context<'a> {
     pub repo_dir: PathBuf,
-    pub node: Option<IpfsNode>,
-    node_constructor: NodeConstructor,
+    pub node: Option<&'a IpfsNode>,
 }
 
-impl Context {
+impl<'a> Context<'a> {
     // takes a path to the repo directory
-    pub fn new(path: PathBuf, node_constructor: NodeConstructor) -> Self {
+    pub fn new(path: PathBuf, node: Option<&'a IpfsNode>) -> Self {
         Context {
             repo_dir: path,
-            node: None,
-            node_constructor: node_constructor,
+            node: node,
         }
     }
 
-    pub fn construct_node(&mut self) -> Result<(), String> {
-        let node = try!((self.node_constructor)(self.repo_dir.clone()));
-        self.node = Some(node);
-        Ok(())
+    pub fn get_node(&self) -> Result<&IpfsNode, String> {
+        match self.node {
+            None => Err(format!("No ipfs repo found at {:?}. Please run `ipfs \
+                                 init`",
+                                self.repo_dir)),
+            Some(node) => Ok(self.node.unwrap()),
+        }
     }
 }
 
 // a request for a command to be executed
-pub struct Request<'a> {
+pub struct Request<'a, 'b> {
     pub command: &'a Command,
     arguments: HashMap<super::ArgName, Arg>,
     options: HashMap<super::OptName, Opt>,
-    pub context: Context,
+    pub context: Context<'b>,
 }
 
-impl<'a> Request<'a> {
+impl<'a, 'b> Request<'a, 'b> {
     pub fn new(cmd: &'a Command,
                args: Vec<(super::ArgName, Arg)>,
                opts: Vec<(super::OptName, Opt)>,
-               context: Context)
+               context: Context<'b>)
                -> Self {
         Request {
             command: cmd,

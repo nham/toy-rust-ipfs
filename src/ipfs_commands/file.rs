@@ -30,7 +30,7 @@ size is the IPFS link size.
 };
 
 pub fn make_command() -> Command {
-    fn run(req: &mut request::Request) -> Result<(), String> {
+    fn run(req: &request::Request) -> Result<(), String> {
         unimplemented!()
     }
 
@@ -66,9 +66,8 @@ fn make_ls_command() -> Command {
 
     // TODO: this is only going to accept hashes for now. Need to implement
     // path resolver so it can do paths.
-    fn run(req: &mut request::Request) -> Result<(), String> {
-        try!(req.context.construct_node());
-        let node = req.context.node.as_ref().unwrap();
+    fn run(req: &request::Request) -> Result<(), String> {
+        let node = try!(req.context.get_node());
 
         let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
 

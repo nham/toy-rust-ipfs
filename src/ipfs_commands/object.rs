@@ -23,7 +23,7 @@ is a base58 encoded multihash.
 };
 
 pub fn make_command() -> Command {
-    fn run(req: &mut request::Request) -> Result<(), String> {
+    fn run(req: &request::Request) -> Result<(), String> {
         unimplemented!()
     }
 
@@ -55,9 +55,8 @@ fn make_get_command() -> Command {
         "Key of the object to retrieve (in base58-encoded multihash format)"
     );
 
-    fn run(req: &mut request::Request) -> Result<(), String> {
-        try!(req.context.construct_node());
-        let node = req.context.node.as_ref().unwrap();
+    fn run(req: &request::Request) -> Result<(), String> {
+        let node = try!(req.context.get_node());
 
         let path = &req.string_arg("key").unwrap()[0];
         let mh = try!(Multihash::from_base58_str(path));

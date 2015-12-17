@@ -16,7 +16,7 @@ pub struct HelpText {
      * */
 }
 
-pub type RunFn = fn(&mut request::Request) -> Result<(), String>;
+pub type RunFn = fn(&request::Request) -> Result<(), String>;
 
 pub struct Command {
     options: Vec<Opt>,
@@ -78,7 +78,7 @@ impl Command {
         &self.arguments[..]
     }
 
-    pub fn run(&self, req: &mut request::Request) -> Result<(), String> {
+    pub fn run(&self, req: &request::Request) -> Result<(), String> {
         (self.run)(req)
     }
 }
