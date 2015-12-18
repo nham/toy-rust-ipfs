@@ -11,48 +11,48 @@ use std::path;
 const InitHelpText: HelpText = HelpText {
     tagline: "Initializes IPFS config file",
     synopsis: "",
-    short_desc: "Initializes IPFS configuration files and generates a new \
-                 keypair.",
+    short_desc: "Initializes IPFS configuration files and generates a new keypair.",
 };
 
-pub fn make_command() -> Command {
+fn run(req: &request::Request) -> Result<(), String> {
+    let repo_dir = req.context.repo_dir.clone();
+    if try!(fsrepo::is_locked(repo_dir.clone())) {
+        return Err("Another process has locked the repo. Unable to continue."
+                       .to_string());
+    }
+
+    try!(check_and_prepare_repo_dir(repo_dir.clone()));
+
+    if try!(fsrepo::is_initialized(repo_dir.clone())) {
+        if req.option("f").is_some() {
+            try!(fsrepo::remove(&repo_dir));
+            try!(util::ensure_dir_writable(&repo_dir).map_err(|e| {
+                format!("Error ensuring repo directory is writable after forced \
+                         removal: {}",
+                        e)
+            }));
+        } else {
+            return Err("IPFS repo already exists.\nReinitializing would overwrite your \
+                        keys.\n(Use -f to force reinitialization.)"
+                           .to_string());
+        }
+    }
+
+    let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
+
+    fsrepo::init(repo_dir, &config)
+}
+
+ipfs_command!(InitCommand, run);
+
+pub fn make_command() -> Box<Command> {
     let force = commands::Opt::new_bool(
         vec!["f", "force"],
         "Overwrite existing configuration (if it exists)"
     );
 
-    fn run(req: &request::Request) -> Result<(), String> {
-        let repo_dir = req.context.repo_dir.clone();
-        if try!(fsrepo::is_locked(repo_dir.clone())) {
-            return Err("Another process has locked the repo. Unable to \
-                        continue."
-                           .to_string());
-        }
 
-        try!(check_and_prepare_repo_dir(repo_dir.clone()));
-
-        if try!(fsrepo::is_initialized(repo_dir.clone())) {
-            if req.option("f").is_some() {
-                try!(fsrepo::remove(&repo_dir));
-                try!(util::ensure_dir_writable(&repo_dir).map_err(|e| {
-                    format!("Error ensuring repo directory is writable after \
-                             forced removal: {}",
-                            e)
-                }));
-            } else {
-                return Err("IPFS repo already exists.\nReinitializing would \
-                            overwrite your keys.\n(Use -f to force \
-                            reinitialization.)"
-                               .to_string());
-            }
-        }
-
-        let config = config::init(config::DEFAULT_KEYPAIR_NUM_BITS);
-
-        fsrepo::init(repo_dir, &config)
-    }
-
-    Command::new(vec![force], vec![], run, InitHelpText, vec![])
+    Box::new(InitCommand::new("init", vec![force], vec![], InitHelpText, vec![]))
 }
 
 

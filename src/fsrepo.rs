@@ -79,9 +79,7 @@ pub fn best_known_path() -> Result<PathBuf, String> {
     // TODO: this should probably use var_os, but having to handle OsString
     // complicates things
     let unexpanded_path = match env::var(config::ENV_NAME_REPO_DIR) {
-        Err(_) => {
-            config::DEFAULT_REPO_ROOT.to_string() + config::DEFAULT_REPO_PATH
-        }
+        Err(_) => config::DEFAULT_REPO_ROOT.to_string() + config::DEFAULT_REPO_PATH,
         Ok(s) => s,
     };
 
@@ -134,13 +132,10 @@ pub fn is_initialized(mut repo_path: PathBuf) -> Result<bool, String> {
 }
 
 pub fn remove<P: AsRef<Path>>(repo_path: P) -> Result<(), String> {
-    fs::remove_dir_all(repo_path)
-        .map_err(|e| format!("Error removing repo: {}", e))
+    fs::remove_dir_all(repo_path).map_err(|e| format!("Error removing repo: {}", e))
 }
 
-pub fn init(mut repo_path: PathBuf,
-            cfg: &config::Config)
-            -> Result<(), String> {
+pub fn init(mut repo_path: PathBuf, cfg: &config::Config) -> Result<(), String> {
     // Don't initialize if already initialized.
     if try!(is_initialized(repo_path.clone())) {
         return Ok(());
@@ -151,9 +146,8 @@ pub fn init(mut repo_path: PathBuf,
 
     let mut datastore_path = repo_path.clone();
     datastore_path.push(DATASTORE_DIR);
-    try!(util::ensure_dir_writable(datastore_path).map_err(|e| {
-        format!("Error checking writability of datastore dir: {}", e)
-    }));
+    try!(util::ensure_dir_writable(datastore_path)
+             .map_err(|e| format!("Error checking writability of datastore dir: {}", e)));
 
     let mut blockstore_path = repo_path.clone();
     blockstore_path.push(BLOCKSTORE_DIR);
@@ -163,9 +157,8 @@ pub fn init(mut repo_path: PathBuf,
 
     let mut logs_path = repo_path.clone();
     logs_path.push(LOGS_DIR);
-    try!(util::ensure_dir_writable(logs_path).map_err(|e| {
-        format!("Error checking writability of logs dir: {}", e)
-    }));
+    try!(util::ensure_dir_writable(logs_path)
+             .map_err(|e| format!("Error checking writability of logs dir: {}", e)));
 
     Ok(())
 }
@@ -184,8 +177,7 @@ fn write_config_file<P: AsRef<Path>>(file_path: P,
         .map_err(|e| format!("Error writing config file: {}", e))
 }
 
-pub fn read_config_file<P: AsRef<Path>>(file_path: P)
-                                        -> Result<config::Config, String> {
+pub fn read_config_file<P: AsRef<Path>>(file_path: P) -> Result<config::Config, String> {
     let mut config_file = try!(File::open(file_path).map_err(|e| {
         format!("Error opening config file: {}", e)
     }));

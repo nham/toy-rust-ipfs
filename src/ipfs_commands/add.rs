@@ -1,28 +1,34 @@
-use commands::{HelpText, Command, Argument};
+use commands::{self, HelpText, Command};
 use commands::request;
+use super::*;
 
-const AddHelpText: HelpText = HelpText {
+const HELP_TEXT: HelpText = HelpText {
     tagline: "Add an object to ipfs.",
     synopsis: "",
     short_desc: "Adds contents of <path> to ipfs.",
 };
 
-pub fn make_command() -> Command {
-    let arg_path = Argument::new_file("path",
-                                      true,
-                                      true,
-                                      "The path(s) to a file to be added to \
-                                       IPFS");
-
-    fn run(req: &request::Request) -> Result<(), String> {
-        for arg in req.args() {
-            println!("arg: {:?}", arg);
-        }
-
-        unimplemented!()
+fn run(req: &request::Request) -> Result<(), String> {
+    for arg in req.args() {
+        println!("arg: {:?}", arg);
     }
 
-    Command::new(vec![], vec![arg_path], run, AddHelpText, vec![])
+    unimplemented!()
+}
+
+ipfs_command!(AddCommand, run);
+
+
+pub fn make_command() -> Box<Command> {
+    let arg_path = commands::Argument::new_file(
+        "path",
+        true,
+        true,
+        "The path(s) to a file to be added to IPFS"
+    );
+
+
+    Box::new(AddCommand::new("add", vec![], vec![arg_path], HELP_TEXT, vec![]))
 }
 
 // fn add_file<P: AsRef<Path>>(path: P)

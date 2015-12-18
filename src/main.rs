@@ -14,7 +14,6 @@ mod core;
 mod crypto;
 mod fsrepo;
 mod merkledag;
-mod root; // TODO: where should this module reside?
 mod util;
 mod unixfs;
 
@@ -34,9 +33,9 @@ type ParseError = String;
 
 impl<'a, 'b> CommandInvocation<'a, 'b> {
     fn from_cli_parse<I>(args: I,
-                     root: &'a commands::Command,
-                     context: request::Context<'b>)
-                     -> Result<Self, ParseError>
+                         root: &'a commands::Command,
+                         context: request::Context<'b>)
+                         -> Result<Self, ParseError>
         where I: Iterator<Item = String>
     {
         let (cmd, args, opts) = try!(commands::cli::parse(args, root));
@@ -53,7 +52,7 @@ impl<'a, 'b> CommandInvocation<'a, 'b> {
 }
 
 fn main() {
-    let root = make_root_command();
+    let root = ipfs_commands::root::make_command();
 
     let path = match fsrepo::best_known_path() {
         Err(e) => {
@@ -74,8 +73,8 @@ fn main() {
     let context = request::Context::new(path, node.as_ref());
 
     let mut invoc = match CommandInvocation::from_cli_parse(env::args().skip(1),
-                                                        &root,
-                                                        context) {
+                                                            &*root,
+                                                            context) {
         Err(e) => {
             println!("{}", e);
             return;
@@ -99,35 +98,4 @@ fn construct_node(repo_path: PathBuf) -> Result<Option<IpfsNode>, String> {
     blockstore_path.push(blockstore::BLOCKSTORE_DIR);
     let bs = Blockstore::new(blockstore_path);
     Ok(Some(IpfsNode::new(bs, config)))
-}
-
-fn make_root_command() -> commands::Command {
-    let short_help = commands::Opt::new_bool(
-        vec!["h"],
-        "Show a short version of the command help text"
-    );
-
-    let long_help = commands::Opt::new_bool(
-        vec!["help"],
-        "Show the full command help text"
-    );
-
-    fn run(req: &request::Request) -> Result<(), String> {
-        println!("{}\n{}\n{}",
-                 req.command.help_text.tagline,
-                 req.command.help_text.short_desc,
-                 req.command.help_text.synopsis);
-        Ok(())
-    }
-
-    commands::Command::new(vec![short_help, long_help],
-                           vec![],
-                           run,
-                           root::RootHelpText,
-                           vec![
-                            ("init", ipfs_commands::init::make_command()),
-                            ("add", ipfs_commands::add::make_command()),
-                            ("file", ipfs_commands::file::make_command()),
-                            ("object", ipfs_commands::object::make_command()),
-                           ])
 }

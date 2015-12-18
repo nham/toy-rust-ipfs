@@ -19,7 +19,7 @@ struct Link {
 struct Node {
     data: Vec<u8>,
     links: Vec<Link>,
-    multihash: RwLock<Option<Multihash>>, /* caches the multihash so it isn't recomputed */
+    multihash: RwLock<Option<Multihash>>, // caches the multihash so it isn't recomputed
 }
 
 impl Link {
@@ -36,9 +36,7 @@ impl Link {
         self.target_size
     }
 
-    pub fn get_node(&self,
-                    dagservice: &DagService)
-                    -> Result<Arc<Node>, String> {
+    pub fn get_node(&self, dagservice: &DagService) -> Result<Arc<Node>, String> {
         match self.node {
             Some(ref node) => Ok(node.clone()),
             None => dagservice.get(&self.hash),
@@ -100,11 +98,10 @@ impl Node {
     }
 
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, String> {
-        let mut pbnode =
-            try!(protobuf::parse_from_reader::<pb::PBNode>(reader)
-                     .map_err(|e| {
-                         format!("Error parsing encoded Node: {}", e)
-                     }));
+        let mut pbnode = try!(protobuf::parse_from_reader::<pb::PBNode>(reader)
+                                  .map_err(|e| {
+                                      format!("Error parsing encoded Node: {}", e)
+                                  }));
 
         let mut links = Vec::new();
 
@@ -119,9 +116,7 @@ impl Node {
         })
     }
 
-    pub fn encode_to_writer<W: Write>(&self,
-                                      writer: &mut W)
-                                      -> Result<(), String> {
+    pub fn encode_to_writer<W: Write>(&self, writer: &mut W) -> Result<(), String> {
         let mut pbnode = pb::PBNode::new();
         pbnode.set_Data(self.data.clone());
 

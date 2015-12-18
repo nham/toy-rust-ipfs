@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
+use std::slice;
 
 pub mod cli;
 pub mod request;
@@ -18,70 +19,156 @@ pub struct HelpText {
 
 pub type RunFn = fn(&request::Request) -> Result<(), String>;
 
-pub struct Command {
-    options: Vec<Opt>,
-    arguments: Vec<Argument>,
-    pre_run: (),
-    run: RunFn,
-    post_run: (),
-    pub help_text: HelpText,
-    subcommands: HashMap<&'static str, Command>,
+pub type ArgName = &'static str;
+pub type OptName = &'static str;
+pub type CommandName = &'static str;
+
+pub trait Command {
+    fn run(&self, &request::Request) -> Result<(), String>;
+    fn get_def(&self) -> &CommandDefinition;
+
+    fn get_name(&self) -> CommandName {
+        self.get_def().get_name()
+    }
+
+    fn get_help_text(&self) -> &HelpText {
+        self.get_def().get_help_text()
+    }
+
+    fn get_options(&self) -> CommandOptions {
+        self.get_def().get_options()
+    }
+
+    // TODO: wrap this in arguments iterator type? boilerplate :(
+    fn get_arguments(&self) -> slice::Iter<Argument> {
+        self.get_def().get_arguments()
+    }
+
+    fn get_subcommand(&self, subcmd: &str) -> Option<&Command> {
+        self.get_def().get_subcommand(subcmd)
+    }
+
+    fn num_args(&self) -> usize {
+        self.get_def().num_args()
+    }
 }
 
-impl Command {
+// For easily making a command
+pub struct CommandDefinition {
+    name: CommandName,
+    options: Vec<Opt>,
+    arguments: Vec<Argument>,
+    help_text: HelpText,
+    subcommands: HashMap<CommandName, Box<Command>>,
+}
+
+impl CommandDefinition {
     // TODO: disallow an argument that isnt the last argument from being variadic
-    pub fn new(options: Vec<Opt>,
+    pub fn new(name: CommandName,
+               options: Vec<Opt>,
                arguments: Vec<Argument>,
-               run: RunFn,
                help_text: HelpText,
-               subcommands: Vec<(&'static str, Command)>)
+               subcommands: Vec<Box<Command>>)
                -> Self {
-        Command {
+        CommandDefinition {
+            name: name,
             options: options,
             arguments: arguments,
-            pre_run: (),
-            run: run,
-            post_run: (),
             help_text: help_text,
-            subcommands: subcommands.into_iter().collect(),
+            subcommands: subcommands.into_iter()
+                                    .map(|cmd| (cmd.get_name(), cmd))
+                                    .collect(),
         }
     }
 
-    pub fn options(&self) -> Vec<(OptName, &Opt)> {
-        let mut v = Vec::new();
-        for opt in self.options.iter() {
-            for &name in opt.names.iter() {
-                v.push((name, opt));
+    pub fn get_name(&self) -> CommandName {
+        self.name
+    }
+
+    pub fn get_help_text(&self) -> &HelpText {
+        &self.help_text
+    }
+
+    pub fn get_options(&self) -> CommandOptions {
+        CommandOptions::new(self.options.iter())
+    }
+
+    pub fn get_subcommand(&self, subcmd: &str) -> Option<&Command> {
+        self.subcommands.get(subcmd).map(|cmd| &**cmd)
+    }
+
+    pub fn num_args(&self) -> usize {
+        self.arguments.len()
+    }
+
+    // TODO: evaluate
+    pub fn get_arguments(&self) -> slice::Iter<Argument> {
+        self.arguments.iter()
+    }
+}
+
+// iterator over (name, command) pairs. Each command can have multiple names.
+struct CommandOptions<'a> {
+    opt_iter: slice::Iter<'a, Opt>,
+    curr_opt: Option<(&'a Opt, slice::Iter<'a, OptName>)>,
+}
+
+impl<'a> CommandOptions<'a> {
+    fn new(iter: slice::Iter<'a, Opt>) -> Self {
+        CommandOptions {
+            opt_iter: iter,
+            curr_opt: None,
+        }
+    }
+
+    fn advance_opt_iter(&mut self) -> bool {
+        match self.opt_iter.next() {
+            None => false,
+            Some(opt) => {
+                self.curr_opt = Some((opt, opt.get_names()));
+                true
             }
         }
-        v
     }
 
-    // TODO: should I remove this now?
-    pub fn get_option<'a>(&'a self, name: &str) -> Option<&'a Opt> {
-        for opt in self.options.iter() {
-            for &opt_name in opt.names.iter() {
-                if name == opt_name {
-                    return Some(opt);
+    fn get_curr_opt(&self) -> Option<&'a Opt> {
+        self.curr_opt.as_ref().map(|curr| curr.0)
+    }
+
+    fn get_name_iter(&mut self) -> Option<&mut slice::Iter<'a, OptName>> {
+        self.curr_opt.as_mut().map(|curr| &mut curr.1)
+    }
+}
+
+impl<'a> Iterator for CommandOptions<'a> {
+    type Item = (OptName, &'a Opt);
+
+    fn next(&mut self) -> Option<(OptName, &'a Opt)> {
+        if self.curr_opt.is_none() {
+            if !self.advance_opt_iter() {
+                return None;
+            }
+        }
+
+        let name: OptName;
+        loop {
+            match self.get_name_iter().unwrap().next() {
+                Some(n) => {
+                    name = n;
+                    break;
+                }
+                None => {
+                    if !self.advance_opt_iter() {
+                        return None;
+                    }
                 }
             }
         }
 
-        None
-    }
-
-    pub fn subcommand(&self, subcmd: &str) -> Option<&Command> {
-        self.subcommands.get(subcmd)
-    }
-
-    pub fn arguments(&self) -> &[Argument] {
-        &self.arguments[..]
-    }
-
-    pub fn run(&self, req: &request::Request) -> Result<(), String> {
-        (self.run)(req)
+        Some((name, self.get_curr_opt().unwrap()))
     }
 }
+
 
 #[derive(Copy, Clone)]
 pub enum OptType {
@@ -89,8 +176,6 @@ pub enum OptType {
     String,
     Int,
 }
-
-pub type OptName = &'static str;
 
 // represents an option for a command
 pub struct Opt {
@@ -106,10 +191,7 @@ impl Opt {
         Self::new(names, OptType::Bool, desc)
     }
 
-    fn new(mut names: Vec<OptName>,
-           opt_type: OptType,
-           desc: &'static str)
-           -> Self {
+    fn new(mut names: Vec<OptName>, opt_type: OptType, desc: &'static str) -> Self {
         let canonical = names[0];
         names.sort_by(|a, b| a.len().cmp(&b.len()));
         Opt {
@@ -120,8 +202,12 @@ impl Opt {
         }
     }
 
-    pub fn name(&self) -> OptName {
+    pub fn get_name(&self) -> OptName {
         self.name
+    }
+
+    pub fn get_names(&self) -> slice::Iter<OptName> {
+        self.names.iter()
     }
 }
 
@@ -130,8 +216,6 @@ enum ArgumentType {
     String,
     File,
 }
-
-pub type ArgName = &'static str;
 
 pub struct Argument {
     name: ArgName,
