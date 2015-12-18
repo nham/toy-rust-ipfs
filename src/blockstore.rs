@@ -54,10 +54,7 @@ impl Blockstore {
         Ok(Block::with_hash(data, hash.clone()))
     }
 
-    pub fn put(&self,
-               multihash: &Multihash,
-               data: &[u8])
-               -> Result<(), String> {
+    pub fn put(&self, multihash: &Multihash, data: &[u8]) -> Result<(), String> {
         match self.has(multihash) {
             Ok(true) => return Ok(()),
             _ => {}

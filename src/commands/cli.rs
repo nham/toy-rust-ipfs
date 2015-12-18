@@ -65,7 +65,9 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             };
 
             match cmd_opt.opt_type {
-                OptType::Bool => opts.push((cmd_opt.get_name(), request::Opt::Bool(true))),
+                OptType::Bool => {
+                    opts.push((cmd_opt.get_name(), request::Opt::Bool(true)))
+                }
                 _ => {
                     // just assume the option argument is the next token.
                     // eventually this will check if theres an equal sign

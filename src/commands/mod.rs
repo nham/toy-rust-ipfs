@@ -75,7 +75,9 @@ impl CommandDefinition {
             options: options,
             arguments: arguments,
             help_text: help_text,
-            subcommands: subcommands.into_iter().map(|cmd| (cmd.get_name(), cmd)).collect(),
+            subcommands: subcommands.into_iter()
+                                    .map(|cmd| (cmd.get_name(), cmd))
+                                    .collect(),
         }
     }
 
@@ -144,7 +146,7 @@ impl<'a> Iterator for CommandOptions<'a> {
     fn next(&mut self) -> Option<(OptName, &'a Opt)> {
         if self.curr_opt.is_none() {
             if !self.advance_opt_iter() {
-                return None
+                return None;
             }
         }
 
@@ -153,11 +155,11 @@ impl<'a> Iterator for CommandOptions<'a> {
             match self.get_name_iter().unwrap().next() {
                 Some(n) => {
                     name = n;
-                    break
+                    break;
                 }
                 None => {
                     if !self.advance_opt_iter() {
-                        return None
+                        return None;
                     }
                 }
             }
