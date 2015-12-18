@@ -34,60 +34,6 @@ pub trait Command {
 
 }
 
-// For easily making a command
-struct CommandDefinition {
-    name: CommandName,
-    options: Vec<Opt>,
-    arguments: Vec<Argument>,
-    help_text: HelpText,
-    subcommands: HashMap<CommandName, Box<Command>>,
-}
-
-impl CommandDefinition {
-    // TODO: disallow an argument that isnt the last argument from being variadic
-    pub fn new(name: CommandName,
-               options: Vec<Opt>,
-               arguments: Vec<Argument>,
-               help_text: HelpText,
-               subcommands: Vec<Box<Command>>)
-               -> Self {
-        CommandDefinition {
-            name: name,
-            options: options,
-            arguments: arguments,
-            help_text: help_text,
-            subcommands: subcommands.into_iter()
-                                    .map(|cmd| (cmd.get_name(), cmd))
-                                    .collect(),
-        }
-    }
-
-    pub fn get_name(&self) -> CommandName {
-        self.name
-    }
-
-    pub fn get_help_text(&self) -> &HelpText {
-        &self.help_text
-    }
-
-    pub fn get_options(&self) -> CommandOptions {
-        CommandOptions::new(self.options.iter())
-    }
-
-    pub fn get_subcommand(&self, subcmd: &str) -> Option<&Command> {
-        self.subcommands.get(subcmd).map(|cmd| &**cmd)
-    }
-
-    pub fn num_args(&self) -> usize {
-        self.arguments.len()
-    }
-
-    // TODO: evaluate
-    pub fn get_arguments(&self) -> slice::Iter<Argument> {
-        self.arguments.iter()
-    }
-}
-
 // iterator over (name, command) pairs. Each command can have multiple names.
 pub struct CommandOptions<'a> {
     opt_iter: slice::Iter<'a, Opt>,
@@ -95,7 +41,7 @@ pub struct CommandOptions<'a> {
 }
 
 impl<'a> CommandOptions<'a> {
-    fn new(iter: slice::Iter<'a, Opt>) -> Self {
+    pub fn new(iter: slice::Iter<'a, Opt>) -> Self {
         CommandOptions {
             opt_iter: iter,
             curr_opt: None,

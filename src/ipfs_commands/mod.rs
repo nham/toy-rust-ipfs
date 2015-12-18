@@ -2,7 +2,11 @@
 macro_rules! ipfs_command {
     ($name:ident, $f:ident) => {
         struct $name {
-            def: ::commands::CommandDefinition,
+            name: ::commands::CommandName,
+            options: Vec<::commands::Opt>,
+            arguments: Vec<::commands::Argument>,
+            help_text: ::commands::HelpText,
+            subcommands: ::std::collections::HashMap<::commands::CommandName, Box<::commands::Command>>,
         }
 
         impl $name {
@@ -12,30 +16,36 @@ macro_rules! ipfs_command {
                    help_text: ::commands::HelpText,
                    subcommands: Vec<Box<::commands::Command>>)
                    -> Self {
-                        $name { def: ::commands::CommandDefinition::new(name,
-                                                                        options,
-                                                                        arguments,
-                                                                        help_text,
-                                                                        subcommands) }
+                        $name {
+                            name: name,
+                            options: options,
+                            arguments: arguments,
+                            help_text: help_text,
+                            subcommands: subcommands.into_iter()
+                                                    .map(|cmd| (cmd.get_name(), cmd))
+                                                    .collect(),
+                        }
                     }
                 }
 
         impl Command for $name {
-            fn get_name(&self) -> ::commands::CommandName { self.def.get_name() }
+            fn get_name(&self) -> ::commands::CommandName { self.name }
+            fn get_help_text(&self) -> &::commands::HelpText { &self.help_text }
 
-            fn get_help_text(&self) -> &::commands::HelpText { self.def.get_help_text() }
-
-            fn get_options(&self) -> ::commands::CommandOptions { self.def.get_options() }
+            fn get_options(&self) -> ::commands::CommandOptions {
+                ::commands::CommandOptions::new(self.options.iter())
+            }
 
             fn get_arguments(&self) -> ::std::slice::Iter<::commands::Argument> {
-                self.def.get_arguments()
+                self.arguments.iter()
             }
+
+            fn num_args(&self) -> usize { self.arguments.len() }
 
             fn get_subcommand(&self, subcmd: &str) -> Option<&::commands::Command> {
-                self.def.get_subcommand(subcmd)
+                self.subcommands.get(subcmd).map(|cmd| &**cmd)
             }
 
-            fn num_args(&self) -> usize { self.def.num_args() }
 
             fn run(&self, req: &::commands::request::Request) -> Result<(), String> {
                 $f(req)
