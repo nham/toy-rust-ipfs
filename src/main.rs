@@ -73,7 +73,7 @@ fn main() {
     let context = request::Context::new(path, node.as_ref());
 
     let mut invoc = match CommandInvocation::from_cli_parse(env::args().skip(1),
-                                                            &root,
+                                                            &*root,
                                                             context) {
         Err(e) => {
             println!("{}", e);

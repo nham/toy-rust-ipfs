@@ -2,6 +2,7 @@ use super::{Command, OptType};
 use super::request::{self, Request};
 
 use std::collections::HashMap;
+use std::slice;
 
 pub type ParseError = String;
 pub type ParseResult<'a> = (&'a Command,
@@ -31,12 +32,12 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
 
     // Stores all the command options for each command in the command path
     let mut cmd_opts = HashMap::new();
-    cmd_opts.extend(root.options());
+    cmd_opts.extend(root.get_options());
 
     // Stores the command args when we encounter a command with arguments
-    let mut cmd_args: Option<&[super::Argument]> = None;
+    let mut cmd_args: Option<slice::Iter<super::Argument>> = None;
     // used for keeping track of which command arg is currently being parsed
-    let mut cmd_arg_num = None;
+    let mut curr_arg = None;
 
     let mut token: String;
 
@@ -64,7 +65,7 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             };
 
             match cmd_opt.opt_type {
-                OptType::Bool => opts.push((cmd_opt.name(), request::Opt::Bool(true))),
+                OptType::Bool => opts.push((cmd_opt.get_name(), request::Opt::Bool(true))),
                 _ => {
                     // just assume the option argument is the next token.
                     // eventually this will check if theres an equal sign
@@ -73,14 +74,14 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
                         None => {
                             return Err(format!("Expecting option argument for option \
                                                 {}, but no more tokens.",
-                                               cmd_opt.name()))
+                                               cmd_opt.get_name()))
                         }
                         Some(s) => s,
                     };
 
                     let req_opt = try!(request::Opt::parse_string(token,
                                                                   cmd_opt.opt_type));
-                    opts.push((cmd_opt.name(), req_opt));
+                    opts.push((cmd_opt.get_name(), req_opt));
                 }
             }
 
@@ -89,41 +90,39 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             // sub commands and parse arguments instead. (We still parse options, but
             // any token that isn't an option (i.e. doesn't start with - or --) will
             // be assumed to be an argument)
-            let num_args = current_cmd.arguments.len();
+            let num_args = current_cmd.num_args();
             if num_args == 0 {
-                let subcmd = match current_cmd.subcommand(&token) {
+                let subcmd = match current_cmd.get_subcommand(&token) {
                     None => return Err(format!("Subcommand {} not found", &token)),
                     Some(cmd) => cmd,
                 };
 
-                cmd_opts.extend(subcmd.options());
+                cmd_opts.extend(subcmd.get_options());
                 current_cmd = subcmd;
 
                 // initialize cmd_args if necessary
-                let num_args = current_cmd.arguments.len();
+                let num_args = current_cmd.num_args();
                 if num_args > 0 {
-                    cmd_args = Some(current_cmd.arguments());
-                    cmd_arg_num = Some(0);
+                    cmd_args = Some(current_cmd.get_arguments());
+                    curr_arg = cmd_args.as_mut().unwrap().next();
                 }
             } else {
                 // TODO: handle optional arguments
 
                 // Command arg index has been incremented past the end of cmd_args slice
-                if cmd_arg_num.unwrap() >= num_args {
+                if curr_arg.is_none() {
                     return Err(format!("Unexpected argument: {}", token));
                 }
 
                 args_one.push(token);
 
-                let curr_cmd_arg = &cmd_args.unwrap()[cmd_arg_num.unwrap()];
-
                 // If it isn't variadic, there are no more arguments to parse, so move
                 // onto the next
-                if !curr_cmd_arg.is_variadic() {
-                    args.push((curr_cmd_arg.name(),
-                               try!(parse_arg_tokens(curr_cmd_arg, args_one))));
+                if !curr_arg.unwrap().is_variadic() {
+                    args.push((curr_arg.unwrap().name(),
+                               try!(parse_arg_tokens(curr_arg.unwrap(), args_one))));
                     args_one = Vec::new();
-                    cmd_arg_num = cmd_arg_num.map(|n| n + 1);
+                    curr_arg = cmd_args.as_mut().unwrap().next();
                 }
             }
         }
@@ -131,17 +130,14 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
 
     // Finish parsing args
     if args_one.len() > 0 {
-        let curr_cmd_arg = &cmd_args.unwrap()[cmd_arg_num.unwrap()];
-        args.push((curr_cmd_arg.name(),
-                   try!(parse_arg_tokens(curr_cmd_arg, args_one))));
-        cmd_arg_num = cmd_arg_num.map(|n| n + 1);
+        args.push((curr_arg.unwrap().name(),
+                   try!(parse_arg_tokens(curr_arg.unwrap(), args_one))));
+        curr_arg = cmd_args.as_mut().unwrap().next();
     }
 
-    let num_args = current_cmd.arguments.len();
 
-    if (cmd_arg_num.is_some() && cmd_arg_num.unwrap() != num_args) {
-        let curr_cmd_arg = &cmd_args.unwrap()[cmd_arg_num.unwrap()];
-        return Err(format!("Missing argument for <{}>", curr_cmd_arg.name()));
+    if !curr_arg.is_none() {
+        return Err(format!("Missing argument for <{}>", curr_arg.unwrap().name()));
     }
 
     Ok((current_cmd, args, opts))

@@ -54,10 +54,11 @@ Use 'ipfs <command> --help' to learn more about each command.
 };
 
 fn run(req: &request::Request) -> Result<(), String> {
+    let help_text = req.command.get_help_text();
     println!("{}\n{}\n{}",
-             req.command.help_text.tagline,
-             req.command.help_text.short_desc,
-             req.command.help_text.synopsis);
+             help_text.tagline,
+             help_text.short_desc,
+             help_text.synopsis);
     Ok(())
 }
 
