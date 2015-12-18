@@ -1,4 +1,3 @@
-use super::*;
 use commands::{HelpText, Command, Argument};
 use commands::request;
 use unixfs;

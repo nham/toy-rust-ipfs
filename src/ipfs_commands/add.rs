@@ -1,6 +1,5 @@
 use commands::{self, HelpText, Command};
 use commands::request;
-use super::*;
 
 const HELP_TEXT: HelpText = HelpText {
     tagline: "Add an object to ipfs.",
