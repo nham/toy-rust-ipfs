@@ -28,7 +28,7 @@ pub trait Command {
     fn get_name(&self) -> CommandName;
     fn get_help_text(&self) -> &HelpText;
     fn get_options(&self) -> CommandOptions;
-    fn get_subcommand(&self, subcmd: &str) -> Option<&Command>;
+    fn get_subcommand(&self, &str) -> Option<&Command>;
     fn num_args(&self) -> usize;
     fn get_arguments(&self) -> slice::Iter<Argument>; // TODO: wrap in iterator?
 
