@@ -25,36 +25,17 @@ pub type CommandName = &'static str;
 
 pub trait Command {
     fn run(&self, &request::Request) -> Result<(), String>;
-    fn get_def(&self) -> &CommandDefinition;
+    fn get_name(&self) -> CommandName;
+    fn get_help_text(&self) -> &HelpText;
+    fn get_options(&self) -> CommandOptions;
+    fn get_subcommand(&self, subcmd: &str) -> Option<&Command>;
+    fn num_args(&self) -> usize;
+    fn get_arguments(&self) -> slice::Iter<Argument>; // TODO: wrap in iterator?
 
-    fn get_name(&self) -> CommandName {
-        self.get_def().get_name()
-    }
-
-    fn get_help_text(&self) -> &HelpText {
-        self.get_def().get_help_text()
-    }
-
-    fn get_options(&self) -> CommandOptions {
-        self.get_def().get_options()
-    }
-
-    // TODO: wrap this in arguments iterator type? boilerplate :(
-    fn get_arguments(&self) -> slice::Iter<Argument> {
-        self.get_def().get_arguments()
-    }
-
-    fn get_subcommand(&self, subcmd: &str) -> Option<&Command> {
-        self.get_def().get_subcommand(subcmd)
-    }
-
-    fn num_args(&self) -> usize {
-        self.get_def().num_args()
-    }
 }
 
 // For easily making a command
-pub struct CommandDefinition {
+struct CommandDefinition {
     name: CommandName,
     options: Vec<Opt>,
     arguments: Vec<Argument>,
@@ -108,7 +89,7 @@ impl CommandDefinition {
 }
 
 // iterator over (name, command) pairs. Each command can have multiple names.
-struct CommandOptions<'a> {
+pub struct CommandOptions<'a> {
     opt_iter: slice::Iter<'a, Opt>,
     curr_opt: Option<(&'a Opt, slice::Iter<'a, OptName>)>,
 }

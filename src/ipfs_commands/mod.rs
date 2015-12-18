@@ -21,9 +21,23 @@ macro_rules! ipfs_command {
                 }
 
         impl Command for $name {
-            fn get_def(&self) -> &::commands::CommandDefinition { &self.def }
+            fn get_name(&self) -> ::commands::CommandName { self.def.get_name() }
 
-            fn run(&self, req: &request::Request) -> Result<(), String> {
+            fn get_help_text(&self) -> &::commands::HelpText { self.def.get_help_text() }
+
+            fn get_options(&self) -> ::commands::CommandOptions { self.def.get_options() }
+
+            fn get_arguments(&self) -> ::std::slice::Iter<::commands::Argument> {
+                self.def.get_arguments()
+            }
+
+            fn get_subcommand(&self, subcmd: &str) -> Option<&::commands::Command> {
+                self.def.get_subcommand(subcmd)
+            }
+
+            fn num_args(&self) -> usize { self.def.num_args() }
+
+            fn run(&self, req: &::commands::request::Request) -> Result<(), String> {
                 $f(req)
             }
         }
