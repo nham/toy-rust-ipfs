@@ -1,4 +1,5 @@
-use commands::{HelpText, Command, Argument};
+use super::*;
+use commands::{HelpText, Command, CommandDefinition, Argument};
 use commands::request;
 use unixfs;
 
@@ -29,16 +30,19 @@ size is the IPFS link size.
 "#,
 };
 
-pub fn make_command() -> Command {
-    fn run(req: &request::Request) -> Result<(), String> {
-        unimplemented!()
-    }
+fn run_file(req: &request::Request) -> Result<(), String> {
+    unimplemented!()
+}
 
-    Command::new(vec![],
-                 vec![],
-                 run,
-                 FileHelpText,
-                 vec![("ls", make_ls_command())])
+ipfs_command!(FileCommand, run_file);
+
+pub fn make_command() -> Box<Command> {
+    let def = CommandDefinition::new("file",
+                                     vec![],
+                                     vec![],
+                                     FileHelpText,
+                                     vec![make_ls_command()]);
+    Box::new(FileCommand::new(def))
 }
 
 #[derive(Debug)]
@@ -57,84 +61,85 @@ struct LsObject {
     pub links: Vec<LsLink>,
 }
 
-fn make_ls_command() -> Command {
+// TODO: this is only going to accept hashes for now. Need to implement
+// path resolver so it can do paths.
+fn run_ls(req: &request::Request) -> Result<(), String> {
+    let node = try!(req.context.get_node());
+
+    let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
+
+    for path in req.string_arg("ipfs-path").unwrap() {
+        let mh = try!(Multihash::from_base58_str(&path));
+        // retrieve merkledag node for the path (multihash, at this point)
+        let mut dag_node = try!(node.dagservice.get(&mh));
+        let unixfs_data = try!(unixfs::from_reader(&mut dag_node.get_data()));
+
+        let file_type = unixfs_data.get_Type();
+
+        let links = match file_type {
+            unixfs::pb::Data_DataType::File => vec![],
+            unixfs::pb::Data_DataType::Directory => {
+                let links = Arc::get_mut(&mut dag_node)
+                                .unwrap()
+                                .get_mut_links();
+                let mut v = Vec::with_capacity(links.len());
+
+                for link in links.iter_mut() {
+                    let link_node = try!(link.get_node(&node.dagservice));
+                    link.set_node(link_node.clone()); // TODO: needed?
+
+                    let link_node_data =
+                        try!(unixfs::from_reader(&mut link_node.get_data()));
+
+                    let ty = link_node_data.get_Type();
+
+                    let size = match ty {
+                        unixfs::pb::Data_DataType::File => link_node_data.get_filesize(),
+                        _ => link.get_target_size(),
+                    };
+
+                    v.push(LsLink {
+                        name: link.clone_name(),
+                        hash: link.clone_hash(),
+                        size: size,
+                        ty: ty,
+                    });
+                }
+
+                v
+            }
+            _ => unimplemented!(),
+        };
+
+        let ls_obj = LsObject {
+            hash: mh,
+            size: unixfs_data.get_filesize(),
+            ty: file_type,
+            links: links,
+        };
+
+        objects.insert(dag_node.multihash(), ls_obj);
+    }
+
+    for (hash, obj) in &objects {
+        println!("{}:", hash);
+        for link in obj.links.iter() {
+            println!("{}", link.name);
+        }
+        println!("");
+    }
+    Ok(())
+}
+
+ipfs_command!(LsCommand, run_ls);
+
+fn make_ls_command() -> Box<Command> {
     let arg_path = Argument::new_string("ipfs-path",
                                         true,
                                         true,
-                                        "The path(s) to the IPFS object(s) \
-                                         to list links from");
+                                        "The path(s) to the IPFS object(s) to list \
+                                         links from");
 
-    // TODO: this is only going to accept hashes for now. Need to implement
-    // path resolver so it can do paths.
-    fn run(req: &request::Request) -> Result<(), String> {
-        let node = try!(req.context.get_node());
-
-        let mut objects: HashMap<Multihash, LsObject> = HashMap::new();
-
-        for path in req.string_arg("ipfs-path").unwrap() {
-            let mh = try!(Multihash::from_base58_str(&path));
-            // retrieve merkledag node for the path (multihash, at this point)
-            let mut dag_node = try!(node.dagservice.get(&mh));
-            let unixfs_data =
-                try!(unixfs::from_reader(&mut dag_node.get_data()));
-
-            let file_type = unixfs_data.get_Type();
-
-            let links = match file_type {
-                unixfs::pb::Data_DataType::File => vec![],
-                unixfs::pb::Data_DataType::Directory => {
-                    let links = Arc::get_mut(&mut dag_node)
-                                    .unwrap()
-                                    .get_mut_links();
-                    let mut v = Vec::with_capacity(links.len());
-
-                    for link in links.iter_mut() {
-                        let link_node = try!(link.get_node(&node.dagservice));
-                        link.set_node(link_node.clone()); // TODO: needed?
-
-                        let link_node_data = try!(unixfs::from_reader(&mut link_node.get_data()));
-
-                        let ty = link_node_data.get_Type();
-
-                        let size = match ty {
-                            unixfs::pb::Data_DataType::File => {
-                                link_node_data.get_filesize()
-                            }
-                            _ => link.get_target_size(),
-                        };
-
-                        v.push(LsLink {
-                            name: link.clone_name(),
-                            hash: link.clone_hash(),
-                            size: size,
-                            ty: ty,
-                        });
-                    }
-
-                    v
-                }
-                _ => unimplemented!(),
-            };
-
-            let ls_obj = LsObject {
-                hash: mh,
-                size: unixfs_data.get_filesize(),
-                ty: file_type,
-                links: links,
-            };
-
-            objects.insert(dag_node.multihash(), ls_obj);
-        }
-
-        for (hash, obj) in &objects {
-            println!("{}:", hash);
-            for link in obj.links.iter() {
-                println!("{}", link.name);
-            }
-            println!("");
-        }
-        Ok(())
-    }
-
-    Command::new(vec![], vec![arg_path], run, FileHelpText, vec![])
+    let def = CommandDefinition::new("ls", vec![], vec![arg_path], FileHelpText, vec![]);
+    Box::new(LsCommand::new(def))
 }

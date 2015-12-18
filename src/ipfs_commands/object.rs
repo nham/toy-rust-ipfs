@@ -1,4 +1,4 @@
-use commands::{HelpText, Command, Argument};
+use commands::{self, HelpText, Command, CommandDefinition};
 use commands::request;
 
 use rust_multihash::Multihash;
@@ -22,16 +22,20 @@ is a base58 encoded multihash.
 "#,
 };
 
-pub fn make_command() -> Command {
-    fn run(req: &request::Request) -> Result<(), String> {
-        unimplemented!()
-    }
+fn run_object(req: &request::Request) -> Result<(), String> {
+    unimplemented!()
+}
 
-    Command::new(vec![],
-                 vec![],
-                 run,
-                 ObjectHelpText,
-                 vec![("get", make_get_command())])
+ipfs_command!(ObjectCommand, run_object);
+
+pub fn make_command() -> Box<Command> {
+    let def = CommandDefinition::new("object",
+                                     vec![],
+                                     vec![],
+                                     ObjectHelpText,
+                                     vec![make_get_command()]);
+
+    Box::new(ObjectCommand::new(def))
 }
 
 #[derive(Debug)]
@@ -47,40 +51,43 @@ struct Node<'a> {
     data: &'a [u8],
 }
 
-fn make_get_command() -> Command {
-    let arg_key = Argument::new_string(
+fn run_get(req: &request::Request) -> Result<(), String> {
+    let node = try!(req.context.get_node());
+
+    let path = &req.string_arg("key").unwrap()[0];
+    let mh = try!(Multihash::from_base58_str(path));
+    let mut dag_node = try!(node.dagservice.get(&mh));
+
+    let mut links = Vec::new();
+    for link in dag_node.get_links() {
+        // TODO: no cloning?
+        links.push(Link {
+            name: link.clone_name(),
+            hash: link.clone_hash(),
+            size: link.get_target_size(),
+        });
+    }
+
+    let view_node = Node {
+        links: links,
+        data: dag_node.get_data(),
+    };
+
+    println!("{:?}", view_node);
+
+    Ok(())
+}
+
+ipfs_command!(GetCommand, run_get);
+
+fn make_get_command() -> Box<Command> {
+    let arg_key = commands::Argument::new_string(
         "key",
         true,
         false,
         "Key of the object to retrieve (in base58-encoded multihash format)"
     );
 
-    fn run(req: &request::Request) -> Result<(), String> {
-        let node = try!(req.context.get_node());
-
-        let path = &req.string_arg("key").unwrap()[0];
-        let mh = try!(Multihash::from_base58_str(path));
-        let mut dag_node = try!(node.dagservice.get(&mh));
-
-        let mut links = Vec::new();
-        for link in dag_node.get_links() {
-            // TODO: no cloning?
-            links.push(Link {
-                name: link.clone_name(),
-                hash: link.clone_hash(),
-                size: link.get_target_size(),
-            });
-        }
-
-        let view_node = Node {
-            links: links,
-            data: dag_node.get_data(),
-        };
-
-        println!("{:?}", view_node);
-
-        Ok(())
-    }
-
-    Command::new(vec![], vec![arg_key], run, GetHelpText, vec![])
+    let def = CommandDefinition::new("get", vec![], vec![arg_key], GetHelpText, vec![]);
+    Box::new(GetCommand::new(def))
 }

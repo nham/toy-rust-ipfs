@@ -58,35 +58,28 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
                 };
 
                 match cmd_opts.get(opt_name) {
-                    None => {
-                        return Err(format!("Option not recognized: {}",
-                                           opt_name))
-                    }
+                    None => return Err(format!("Option not recognized: {}", opt_name)),
                     Some(opt) => opt,
                 }
             };
 
             match cmd_opt.opt_type {
-                OptType::Bool => {
-                    opts.push((cmd_opt.name(), request::Opt::Bool(true)))
-                }
+                OptType::Bool => opts.push((cmd_opt.name(), request::Opt::Bool(true))),
                 _ => {
                     // just assume the option argument is the next token.
                     // eventually this will check if theres an equal sign
                     // and split the token based on that
                     token = match input.next() {
                         None => {
-                            return Err(format!("Expecting option argument \
-                                                for option {}, but no more \
-                                                tokens.",
+                            return Err(format!("Expecting option argument for option \
+                                                {}, but no more tokens.",
                                                cmd_opt.name()))
                         }
                         Some(s) => s,
                     };
 
-                    let req_opt =
-                        try!(request::Opt::parse_string(token,
-                                                        cmd_opt.opt_type));
+                    let req_opt = try!(request::Opt::parse_string(token,
+                                                                  cmd_opt.opt_type));
                     opts.push((cmd_opt.name(), req_opt));
                 }
             }
@@ -99,9 +92,7 @@ pub fn parse<I>(mut input: I, root: &Command) -> Result<ParseResult, ParseError>
             let num_args = current_cmd.arguments.len();
             if num_args == 0 {
                 let subcmd = match current_cmd.subcommand(&token) {
-                    None => {
-                        return Err(format!("Subcommand {} not found", &token))
-                    }
+                    None => return Err(format!("Subcommand {} not found", &token)),
                     Some(cmd) => cmd,
                 };
 

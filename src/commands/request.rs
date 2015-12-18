@@ -17,9 +17,7 @@ pub enum Opt {
 }
 
 impl Opt {
-    pub fn parse_string(s: String,
-                        opt_type: super::OptType)
-                        -> Result<Self, String> {
+    pub fn parse_string(s: String, opt_type: super::OptType) -> Result<Self, String> {
         match opt_type {
             super::OptType::String => Ok(Opt::String(s)),
             super::OptType::Bool => {
@@ -28,8 +26,7 @@ impl Opt {
                 } else if s == "false" {
                     Ok(Opt::Bool(false))
                 } else {
-                    Err("Expected boolean value for boolean option."
-                            .to_string())
+                    Err("Expected boolean value for boolean option.".to_string())
                 }
             }
             super::OptType::Int => {
@@ -53,9 +50,7 @@ impl FileArg {
             Ok(true) => {}
             Ok(false) => return Err(format!("File {:?} does not exist", path)),
             Err(e) => {
-                return Err(format!("Error checking existence of file {:?}: {}",
-                                   path,
-                                   e))
+                return Err(format!("Error checking existence of file {:?}: {}", path, e))
             }
         }
 
@@ -81,9 +76,7 @@ impl Arg {
     // Panics if the Arg is not a string argument
     fn get_string(&self) -> &[String] {
         match *self {
-            Arg::Files(_) => {
-                panic!("Could not get_strings, Arg is a file argument")
-            }
+            Arg::Files(_) => panic!("Could not get_strings, Arg is a file argument"),
             Arg::Strings(ref v) => &v[..],
         }
     }
@@ -91,9 +84,7 @@ impl Arg {
     // Panics if the Arg is not a file argument
     fn get_file(&self) -> &[FileArg] {
         match *self {
-            Arg::Strings(_) => {
-                panic!("Could not get_files, Arg is a string argument")
-            }
+            Arg::Strings(_) => panic!("Could not get_files, Arg is a string argument"),
             Arg::Files(ref v) => &v[..],
         }
     }
@@ -117,9 +108,10 @@ impl<'a> Context<'a> {
 
     pub fn get_node(&self) -> Result<&IpfsNode, String> {
         match self.node {
-            None => Err(format!("No ipfs repo found at {:?}. Please run `ipfs \
-                                 init`",
-                                self.repo_dir)),
+            None => {
+                Err(format!("No ipfs repo found at {:?}. Please run `ipfs init`",
+                            self.repo_dir))
+            }
             Some(node) => Ok(self.node.unwrap()),
         }
     }

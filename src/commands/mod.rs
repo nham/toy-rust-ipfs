@@ -18,33 +18,43 @@ pub struct HelpText {
 
 pub type RunFn = fn(&request::Request) -> Result<(), String>;
 
-pub struct Command {
-    options: Vec<Opt>,
-    arguments: Vec<Argument>,
-    pre_run: (),
-    run: RunFn,
-    post_run: (),
-    pub help_text: HelpText,
-    subcommands: HashMap<&'static str, Command>,
+pub type ArgName = &'static str;
+pub type OptName = &'static str;
+pub type CommandName = &'static str;
+
+pub trait Command {
+    fn run(&self, &request::Request) -> Result<(), String>;
+    fn get_def(&self) -> &CommandDefinition;
 }
 
-impl Command {
+// For easily making a command
+pub struct CommandDefinition {
+    name: CommandName,
+    options: HashMap<OptName, Opt>,
+    arguments: Vec<Argument>,
+    help_text: HelpText,
+    subcommands: HashMap<CommandName, Box<Command>>,
+}
+
+impl CommandDefinition {
     // TODO: disallow an argument that isnt the last argument from being variadic
-    pub fn new(options: Vec<Opt>,
+    pub fn new(name: CommandName,
+               options: Vec<Opt>,
                arguments: Vec<Argument>,
-               run: RunFn,
                help_text: HelpText,
-               subcommands: Vec<(&'static str, Command)>)
+               subcommands: Vec<Box<Command>>)
                -> Self {
-        Command {
+        CommandDefinition {
+            name: name,
             options: options,
             arguments: arguments,
-            pre_run: (),
-            run: run,
-            post_run: (),
             help_text: help_text,
-            subcommands: subcommands.into_iter().collect(),
+            subcommands: subcommands.into_iter().map(|cmd| (cmd.name(), cmd)).collect(),
         }
+    }
+
+    pub fn name(&self) -> CommandName {
+        self.name
     }
 
     pub fn options(&self) -> Vec<(OptName, &Opt)> {
@@ -90,8 +100,6 @@ pub enum OptType {
     Int,
 }
 
-pub type OptName = &'static str;
-
 // represents an option for a command
 pub struct Opt {
     name: OptName, // canonical name for the option
@@ -106,10 +114,7 @@ impl Opt {
         Self::new(names, OptType::Bool, desc)
     }
 
-    fn new(mut names: Vec<OptName>,
-           opt_type: OptType,
-           desc: &'static str)
-           -> Self {
+    fn new(mut names: Vec<OptName>, opt_type: OptType, desc: &'static str) -> Self {
         let canonical = names[0];
         names.sort_by(|a, b| a.len().cmp(&b.len()));
         Opt {
@@ -130,8 +135,6 @@ enum ArgumentType {
     String,
     File,
 }
-
-pub type ArgName = &'static str;
 
 pub struct Argument {
     name: ArgName,

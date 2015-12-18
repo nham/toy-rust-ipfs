@@ -32,8 +32,7 @@ impl Blockstore {
 
     pub fn has(&self, multihash: &Multihash) -> Result<bool, String> {
         util::file_exists(self.block_file(multihash)).map_err(|e| {
-            format!("Error checking for existence of file in Blockstore::has: \
-                     {}",
+            format!("Error checking for existence of file in Blockstore::has: {}",
                     e)
         })
     }
@@ -48,8 +47,7 @@ impl Blockstore {
         let mut data = Vec::new();
         try!(file.read_to_end(&mut data)
                  .map_err(|e| {
-                     format!("Error reading file for hash {:?} in \
-                              Blockstore::get: {}",
+                     format!("Error reading file for hash {:?} in Blockstore::get: {}",
                              hash,
                              e)
                  }));
