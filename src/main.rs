@@ -1,5 +1,7 @@
 extern crate atomicwrites;
+extern crate env_logger;
 extern crate libc;
+#[macro_use] extern crate log;
 extern crate openssl;
 extern crate protobuf;
 extern crate rust_multihash;
@@ -52,6 +54,8 @@ impl<'a, 'b> CommandInvocation<'a, 'b> {
 }
 
 fn main() {
+    env_logger::init().unwrap();
+
     let root = ipfs_commands::root::make_command();
 
     let path = match fsrepo::best_known_path() {

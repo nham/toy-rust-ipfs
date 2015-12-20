@@ -39,7 +39,7 @@ impl Blockstore {
 
     pub fn get(&self, hash: &Multihash) -> Result<Block, String> {
         let fname = self.block_file(hash);
-        println!("Blockstore::get, file name = {:?}", fname);
+        trace!("Blockstore::get, file name = {:?}", fname);
         let mut file = try!(File::open(&fname).map_err(|e| {
             format!("Error opening file {:?} for hash {} in Blockstore::get: {}",
                     fname,
