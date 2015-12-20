@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 
 pub mod pb;
 
-struct FSNode {
+pub struct FSNode {
     data: Vec<u8>,
     blocksizes: Vec<u64>,
     subtotal: u64,
@@ -11,6 +11,15 @@ struct FSNode {
 }
 
 impl FSNode {
+    pub fn file_from_bytes(bytes: Vec<u8>) -> FSNode {
+        FSNode {
+            data: bytes,
+            blocksizes: vec![],
+            subtotal: 0,
+            ty: pb::Data_DataType::File,
+        }
+    }
+
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, String> {
         let mut pb_node = try!(from_reader(reader));
         let data = pb_node.take_Data();
@@ -23,6 +32,7 @@ impl FSNode {
         })
     }
 
+    // GetBytes in go-ipfs
     pub fn encode_to_writer<W: Write>(&self, writer: &mut W) -> Result<(), String> {
         let mut pb_node = pb::Data::new();
         pb_node.set_Data(self.data.clone());

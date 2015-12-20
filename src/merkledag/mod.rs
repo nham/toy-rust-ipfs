@@ -9,14 +9,14 @@ use rust_multihash::Multihash;
 use std::io::{Read, Write};
 use std::sync::{Arc, RwLock};
 
-struct Link {
+pub struct Link {
     name: String,
     hash: Multihash,
     target_size: u64,
     node: Option<Arc<Node>>,
 }
 
-struct Node {
+pub struct Node {
     data: Vec<u8>,
     links: Vec<Link>,
     multihash: RwLock<Option<Multihash>>, // caches the multihash so it isn't recomputed
@@ -97,6 +97,16 @@ impl Node {
         util::hash(&buf[..])
     }
 
+    // creates a Node with no Links, only data
+    pub fn from_data(data: Vec<u8>) -> Self {
+        Node {
+            data: data,
+            links: vec![],
+            multihash: RwLock::new(None),
+        }
+    }
+
+    // parses a protobuf-encoded PBNode from the reader
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Self, String> {
         let mut pbnode = try!(protobuf::parse_from_reader::<pb::PBNode>(reader)
                                   .map_err(|e| {
@@ -116,6 +126,7 @@ impl Node {
         })
     }
 
+    // encodes, using protobuf, as a PBNode
     pub fn encode_to_writer<W: Write>(&self, writer: &mut W) -> Result<(), String> {
         let mut pbnode = pb::PBNode::new();
         pbnode.set_Data(self.data.clone());
@@ -144,7 +155,9 @@ impl DagService {
 
     pub fn add<'a>(&self, node: &'a Node) -> Result<Multihash, String> {
         let hash = node.multihash();
-        try!(self.blockstore.put(&hash, node.get_data()));
+        let mut data = Vec::new();
+        try!(node.encode_to_writer(&mut data));
+        try!(self.blockstore.put(&hash, &data[..]));
         Ok(hash)
     }
 

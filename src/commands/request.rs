@@ -6,7 +6,7 @@ use util;
 
 use std::collections::HashMap;
 use std::collections::hash_map;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 // An option submitted for a request.
 #[derive(Debug)]
@@ -55,6 +55,12 @@ impl FileArg {
         }
 
         Ok(FileArg { path: path })
+    }
+}
+
+impl AsRef<Path> for FileArg {
+    fn as_ref(&self) -> &Path {
+        self.path.as_ref()
     }
 }
 
