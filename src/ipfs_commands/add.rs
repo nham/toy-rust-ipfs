@@ -22,6 +22,7 @@ fn run(req: &request::Request) -> Result<(), String> {
         let hash = try!(add_file(path, node.dagservice.clone()));
         println!("added {} {:?}", hash, path);
     }
+    Ok(())
 }
 
 ipfs_command!(AddCommand, run);

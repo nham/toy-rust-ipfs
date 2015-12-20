@@ -7,6 +7,7 @@ use util;
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::path::{Path, PathBuf};
+use std::fmt;
 
 // An option submitted for a request.
 #[derive(Debug)]
@@ -38,7 +39,6 @@ impl Opt {
     }
 }
 
-#[derive(Debug)]
 pub struct FileArg {
     path: PathBuf,
 }
@@ -61,6 +61,12 @@ impl FileArg {
 impl AsRef<Path> for FileArg {
     fn as_ref(&self) -> &Path {
         self.path.as_ref()
+    }
+}
+
+impl fmt::Debug for FileArg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        self.path.fmt(f)
     }
 }
 
